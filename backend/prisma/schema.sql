@@ -1,5 +1,10 @@
--- Enable PostGIS extension
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- Enable PostGIS extension when available.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'postgis') THEN
+        CREATE EXTENSION IF NOT EXISTS postgis;
+    END IF;
+END $$;
 
 -- Create enums
 CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD');
@@ -41,7 +46,12 @@ CREATE TABLE poles (
 
 CREATE INDEX idx_poles_status ON poles(status);
 CREATE INDEX idx_poles_code ON poles(pole_code);
-CREATE INDEX idx_poles_location ON poles USING GIST (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326));
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
+        CREATE INDEX IF NOT EXISTS idx_poles_location ON poles USING GIST (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326));
+    END IF;
+END $$;
 
 -- Orders table
 CREATE TABLE orders (

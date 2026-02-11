@@ -60,6 +60,7 @@ Detailed sprint tracking: `_bmad-output/implementation-artifacts/sprint-status.m
 - PRD: `_bmad-output/planning-artifacts/prd.md`
 - Architecture: `_bmad-output/planning-artifacts/architecture.md`
 - Epics & Stories: `_bmad-output/planning-artifacts/epics-and-stories.md`
+- Coolify Deploy Runbook: `docs/COOLIFY_DEPLOY_RUNBOOK.md`
 
 ## License
 

@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Prisma needs OpenSSL at build/runtime to resolve the correct engine binary.
+RUN apk add --no-cache openssl
+
 # Copy package files for backend
 COPY backend/package*.json ./backend/
 COPY backend/prisma ./backend/prisma/

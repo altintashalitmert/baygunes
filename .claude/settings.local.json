@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gemini:*)",
+      "Bash(/opt/homebrew/bin/gemini:*)",
+      "Bash(chmod:*)",
+      "Bash(bash:*)"
+    ]
+  }
+}

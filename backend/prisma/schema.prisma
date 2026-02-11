@@ -1,0 +1,167 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  OPERATOR
+  PRINTER
+  FIELD
+}
+
+enum PoleStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  SCHEDULED
+  PRINTING
+  AWAITING_MOUNT
+  LIVE
+  EXPIRED
+  COMPLETED
+  CANCELLED
+}
+
+enum FileType {
+  CONTRACT
+  AD_IMAGE
+  PROOF_MOUNT
+  PROOF_DISMOUNT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      UserRole
+  name      String
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdOrders     Order[]          @relation("CreatedOrders")
+  printerOrders     Order[]          @relation("PrinterOrders")
+  fieldOrders       Order[]          @relation("FieldOrders")
+  workflowChanges   WorkflowHistory[]
+  uploadedFiles     File[]
+
+  @@index([role])
+  @@index([email])
+  @@map("users")
+}
+
+model Pole {
+  id           String     @id @default(uuid())
+  poleCode     String     @unique @map("pole_code")
+  latitude     Float
+  longitude    Float
+  city         String?
+  district     String?
+  neighborhood String?
+  street       String?
+  sequenceNo   Int?       @map("sequence_no")
+  status       PoleStatus @default(AVAILABLE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  orders Order[]
+
+  @@index([status])
+  @@index([poleCode])
+  @@map("poles")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  poleId          String      @map("pole_id")
+  clientName      String      @map("client_name")
+  clientContact   String?     @map("client_contact")
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime    @map("end_date") @db.Date
+  status          OrderStatus @default(PENDING)
+  contractFileUrl String?     @map("contract_file_url")
+  adImageUrl      String?     @map("ad_image_url")
+  createdById     String      @map("created_by")
+  assignedPrinter String?     @map("assigned_printer")
+  assignedField   String?     @map("assigned_field")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  pole            Pole              @relation(fields: [poleId], references: [id], onDelete: Restrict)
+  createdBy       User              @relation("CreatedOrders", fields: [createdById], references: [id])
+  printer         User?             @relation("PrinterOrders", fields: [assignedPrinter], references: [id])
+  field           User?             @relation("FieldOrders", fields: [assignedField], references: [id])
+  workflowHistory WorkflowHistory[]
+  files           File[]
+
+  @@index([poleId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@index([assignedPrinter])
+  @@index([assignedField])
+  @@map("orders")
+}
+
+model WorkflowHistory {
+  id        String      @id @default(uuid())
+  orderId   String      @map("order_id")
+  oldStatus OrderStatus? @map("old_status")
+  newStatus OrderStatus @map("new_status")
+  changedBy String      @map("changed_by")
+  notes     String?
+  timestamp DateTime    @default(now())
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [changedBy], references: [id])
+
+  @@index([orderId])
+  @@index([timestamp(sort: Desc)])
+  @@map("workflow_history")
+}
+
+model PricingConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Decimal  @db.Decimal(10, 2)
+  unit      String? // 'TL', '%'
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("pricing_config")
+}
+
+model File {
+  id           String   @id @default(uuid())
+  orderId      String   @map("order_id")
+  fileType     FileType @map("file_type")
+  fileUrl      String   @map("file_url")
+  originalName String?  @map("original_name")
+  fileSize     Int?     @map("file_size")
+  uploadedBy   String   @map("uploaded_by")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [uploadedBy], references: [id])
+
+  @@index([orderId])
+  @@index([fileType])
+  @@map("files")
+}

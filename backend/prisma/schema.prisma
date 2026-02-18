@@ -41,7 +41,7 @@ enum FileType {
 }
 
 model User {
-  id                 String   @id @default(uuid())
+  id                 String   @id @default(uuid()) @db.Uuid
   email              String   @unique
   password           String
   role               UserRole
@@ -70,7 +70,7 @@ model User {
 }
 
 model Pole {
-  id           String     @id @default(uuid())
+  id           String     @id @default(uuid()) @db.Uuid
   poleCode     String     @unique @map("pole_code")
   latitude     Float
   longitude    Float
@@ -94,8 +94,8 @@ model Pole {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  poleId          String      @map("pole_id")
+  id              String      @id @default(uuid()) @db.Uuid
+  poleId          String      @map("pole_id") @db.Uuid
   clientName      String      @map("client_name")
   clientContact   String?     @map("client_contact")
   startDate       DateTime    @map("start_date") @db.Date
@@ -103,11 +103,11 @@ model Order {
   status          OrderStatus @default(PENDING)
   contractFileUrl String?     @map("contract_file_url")
   adImageUrl      String?     @map("ad_image_url")
-  createdById     String      @map("created_by")
-  assignedPrinter String?     @map("assigned_printer")
-  assignedField   String?     @map("assigned_field")
+  createdById     String      @map("created_by") @db.Uuid
+  assignedPrinter String?     @map("assigned_printer") @db.Uuid
+  assignedField   String?     @map("assigned_field") @db.Uuid
   cancelledAt     DateTime?   @map("cancelled_at")
-  cancelledBy     String?     @map("cancelled_by")
+  cancelledBy     String?     @map("cancelled_by") @db.Uuid
   cancellationReason String?  @map("cancellation_reason")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
@@ -130,11 +130,11 @@ model Order {
 }
 
 model WorkflowHistory {
-  id        String      @id @default(uuid())
-  orderId   String      @map("order_id")
+  id        String      @id @default(uuid()) @db.Uuid
+  orderId   String      @map("order_id") @db.Uuid
   oldStatus OrderStatus? @map("old_status")
   newStatus OrderStatus @map("new_status")
-  changedBy String      @map("changed_by")
+  changedBy String      @map("changed_by") @db.Uuid
   notes     String?
   isRollback Boolean   @default(false) @map("is_rollback")
   timestamp DateTime    @default(now())
@@ -149,12 +149,12 @@ model WorkflowHistory {
 }
 
 model PricingConfig {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   key       String   @unique
   value     Decimal  @db.Decimal(10, 2)
   unit      String? // 'TL', '%'
   updatedAt DateTime @updatedAt @map("updated_at")
-  updatedBy String?  @map("updated_by")
+  updatedBy String?  @map("updated_by") @db.Uuid
 
   // Relations
   user   User?             @relation(fields: [updatedBy], references: [id])
@@ -164,12 +164,12 @@ model PricingConfig {
 }
 
 model PricingHistory {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Uuid
   pricingKey   String   @map("pricing_key")
   oldValue     Decimal  @db.Decimal(10, 2) @map("old_value")
   newValue     Decimal  @db.Decimal(10, 2) @map("new_value")
   unit         String?
-  changedBy    String   @map("changed_by")
+  changedBy    String   @map("changed_by") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -182,14 +182,14 @@ model PricingHistory {
 }
 
 model File {
-  id           String   @id @default(uuid())
-  orderId      String   @map("order_id")
+  id           String   @id @default(uuid()) @db.Uuid
+  orderId      String   @map("order_id") @db.Uuid
   fileType     FileType @map("file_type")
   fileUrl      String   @map("file_url")
   thumbnailUrl String?  @map("thumbnail_url")
   originalName String?  @map("original_name")
   fileSize     Int?     @map("file_size")
-  uploadedBy   String   @map("uploaded_by")
+  uploadedBy   String   @map("uploaded_by") @db.Uuid
   deletedAt    DateTime? @map("deleted_at")
   uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
@@ -204,8 +204,8 @@ model File {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   usedAt    DateTime? @map("used_at")
@@ -220,9 +220,9 @@ model PasswordResetToken {
 }
 
 model NotificationLog {
-  id           String    @id @default(uuid())
-  userId       String    @map("user_id")
-  orderId      String?   @map("order_id")
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  orderId      String?   @map("order_id") @db.Uuid
   type         String    // 'EMAIL', 'SMS'
   template     String    // Template name
   subject      String?
@@ -243,8 +243,8 @@ model NotificationLog {
 }
 
 model UserNotificationPreferences {
-  id                 String   @id @default(uuid())
-  userId             String   @unique @map("user_id")
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
   emailEnabled       Boolean  @default(true) @map("email_enabled")
   newOrderEnabled    Boolean  @default(true) @map("new_order_enabled")
   statusChangeEnabled Boolean @default(true) @map("status_change_enabled")
@@ -260,7 +260,7 @@ model UserNotificationPreferences {
 }
 
 model LoginAttempt {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   email     String
   ipAddress String   @map("ip_address")
   success   Boolean
@@ -273,14 +273,14 @@ model LoginAttempt {
 }
 
 model Report {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Uuid
   type         String   // 'PRINTER', 'FIELD', 'FINANCIAL'
   title        String
   fileUrl      String   @map("file_url")
   fileType     String   @map("file_type") // 'PDF', 'EXCEL', 'CSV'
   startDate    DateTime @map("start_date")
   endDate      DateTime @map("end_date")
-  generatedBy  String   @map("generated_by")
+  generatedBy  String   @map("generated_by") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([type])

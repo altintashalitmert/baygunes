@@ -9,8 +9,8 @@ echo "🚀 Baygunes PBMS Coolify Deployment Script"
 echo "=========================================="
 
 # Configuration
-COOLIFY_HOST="http://35.246.196.169:8000"
-TOKEN="1|a8wJx6kVfO7ElFMhYAd8UWr4IsSeTnHG3JmP5b7p60e0e254"
+COOLIFY_HOST="${COOLIFY_HOST:-http://35.246.196.169:8000}"
+TOKEN="${COOLIFY_TOKEN:-}"
 PROJECT_NAME="baygunes"
 TEAM_ID="0"
 
@@ -21,6 +21,12 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Step 1: Checking project...${NC}"
+
+if [[ -z "${TOKEN}" ]]; then
+  echo -e "${RED}Missing COOLIFY_TOKEN environment variable.${NC}" >&2
+  echo "Example: COOLIFY_TOKEN=\"<your-token>\" ./deploy-coolify.sh" >&2
+  exit 1
+fi
 
 # Get project info
 PROJECT_RESPONSE=$(curl -s -H "Authorization: Bearer ${TOKEN}" "${COOLIFY_HOST}/api/v1/projects")

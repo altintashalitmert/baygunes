@@ -51,4 +51,5 @@ coverage/
 # Misc
 *.pem
 *.key
+gsckey.json
 .vercel

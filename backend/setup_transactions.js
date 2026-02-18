@@ -39,6 +39,15 @@ const run = async () => {
     try {
       await client.query('BEGIN');
 
+      // Ensure gen_random_uuid() is available for UUID defaults.
+      await client.query(`
+        DO $$ BEGIN
+          IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pgcrypto') THEN
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          END IF;
+        END $$;
+      `);
+
       const accountIdType = await getColumnType(client, 'accounts', 'id', 'UUID');
       const orderIdType = await getColumnType(client, 'orders', 'id', 'UUID');
       const userIdType = await getColumnType(client, 'users', 'id', 'UUID');

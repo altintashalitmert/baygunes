@@ -1,59 +1,91 @@
 import { Client } from '@elastic/elasticsearch';
 
-// Elasticsearch client configuration
-const esClient = new Client({
-  node: process.env.ELASTICSEARCH_URL || 'http://elasticsearch:9200',
-  auth: {
-    username: process.env.ELASTICSEARCH_USERNAME || '',
-    password: process.env.ELASTICSEARCH_PASSWORD || ''
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
+const rawIndexName = (process.env.ELASTICSEARCH_INDEX || 'baygunes').trim();
+const INDEX_NAME = rawIndexName.toLowerCase().replace(/[^a-z0-9-_]+/g, '-');
+const SERVICE_NAME = (process.env.SERVICE_NAME || 'baygunes-backend').trim();
 
-const INDEX_NAME = 'baygunes-logs';
+const isElasticEnabled = () => Boolean((process.env.ELASTICSEARCH_URL || '').trim());
+
+const buildClientOptions = () => {
+  const node = (process.env.ELASTICSEARCH_URL || 'http://elasticsearch:9200').trim();
+  const username = (process.env.ELASTICSEARCH_USERNAME || '').trim();
+  const password = process.env.ELASTICSEARCH_PASSWORD || '';
+
+  // Note: Coolify deployments often use self-signed certs or internal TLS.
+  const options = {
+    node,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  };
+
+  if (username) {
+    options.auth = { username, password };
+  }
+
+  return options;
+};
+
+let esClient = null;
+
+const getEsClient = () => {
+  if (!isElasticEnabled()) return null;
+  if (!esClient) {
+    esClient = new Client(buildClientOptions());
+  }
+  return esClient;
+};
+
+const resolveExistsResult = (result) => {
+  if (typeof result === 'boolean') return result;
+  if (typeof result?.body === 'boolean') return result.body;
+  if (typeof result?.statusCode === 'number') return result.statusCode === 200;
+  return false;
+};
 
 // Initialize index with mappings
 export const initElasticsearch = async () => {
   try {
-    const indexExists = await esClient.indices.exists({ index: INDEX_NAME });
+    const client = getEsClient();
+    if (!client) return;
+
+    const indexExists = resolveExistsResult(
+      await client.indices.exists({ index: INDEX_NAME })
+    );
     
     if (!indexExists) {
-      await esClient.indices.create({
+      await client.indices.create({
         index: INDEX_NAME,
-        body: {
-          mappings: {
-            properties: {
-              timestamp: { type: 'date' },
-              level: { type: 'keyword' },
-              message: { type: 'text' },
-              service: { type: 'keyword' },
-              component: { type: 'keyword' },
-              userId: { type: 'keyword' },
-              orderId: { type: 'keyword' },
-              poleId: { type: 'keyword' },
-              error: {
-                properties: {
-                  message: { type: 'text' },
-                  stack: { type: 'text' },
-                  code: { type: 'keyword' }
-                }
+        mappings: {
+          properties: {
+            timestamp: { type: 'date' },
+            level: { type: 'keyword' },
+            message: { type: 'text' },
+            service: { type: 'keyword' },
+            component: { type: 'keyword' },
+            userId: { type: 'keyword' },
+            orderId: { type: 'keyword' },
+            poleId: { type: 'keyword' },
+            error: {
+              properties: {
+                message: { type: 'text' },
+                stack: { type: 'text' },
+                code: { type: 'keyword' },
               },
-              metadata: { type: 'object' },
-              ip: { type: 'ip' },
-              userAgent: { type: 'text' },
-              url: { type: 'text' },
-              method: { type: 'keyword' },
-              responseTime: { type: 'integer' },
-              statusCode: { type: 'integer' }
-            }
+            },
+            metadata: { type: 'object' },
+            ip: { type: 'ip' },
+            userAgent: { type: 'text' },
+            url: { type: 'text' },
+            method: { type: 'keyword' },
+            responseTime: { type: 'integer' },
+            statusCode: { type: 'integer' },
           },
-          settings: {
-            number_of_shards: 1,
-            number_of_replicas: 0
-          }
-        }
+        },
+        settings: {
+          number_of_shards: 1,
+          number_of_replicas: 0,
+        },
       });
       console.log('✅ Elasticsearch index created:', INDEX_NAME);
     }
@@ -65,17 +97,24 @@ export const initElasticsearch = async () => {
 // Log function
 export const logToElasticsearch = async (level, message, metadata = {}) => {
   try {
+    const client = getEsClient();
+    if (!client) {
+      // When ES is not configured, fall back silently to console.
+      console.log(`[${level}] ${message}`, metadata);
+      return;
+    }
+
     const logEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
-      service: 'baygunes-backend',
+      service: SERVICE_NAME,
       ...metadata
     };
 
-    await esClient.index({
+    await client.index({
       index: INDEX_NAME,
-      body: logEntry
+      document: logEntry,
     });
   } catch (error) {
     console.error('❌ Failed to log to Elasticsearch:', error.message);

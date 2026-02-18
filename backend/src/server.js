@@ -14,10 +14,16 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import { initScheduler } from './cron/scheduler.js';
+import { errorLogger, initElasticsearch, requestLogger } from './services/logging.service.js';
+import { initNotificationQueueProcessor } from './services/notification.service.js';
 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
 
 const ensureRequiredEnv = () => {
   if (!process.env.JWT_SECRET) {
@@ -33,6 +39,14 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const elasticEnabled = Boolean(process.env.ELASTICSEARCH_URL);
+if (elasticEnabled) {
+  initElasticsearch().catch((err) => {
+    console.error('❌ Failed to initialize Elasticsearch:', err?.message || err);
+  });
+  app.use(requestLogger);
+}
 
 // Serve static files (uploads)
 // Serve from backend/public/uploads available at http://localhost:3000/uploads
@@ -98,6 +112,10 @@ app.use('/api/notifications', notificationRoutes);
 import reportRoutes from './routes/report.routes.js';
 app.use('/api/reports', reportRoutes);
 
+if (elasticEnabled) {
+  app.use(errorLogger);
+}
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -124,6 +142,10 @@ app.use((req, res) => {
 export const startServer = () => {
   ensureRequiredEnv();
   initScheduler();
+  const redisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+  if (redisConfigured) {
+    initNotificationQueueProcessor();
+  }
   return app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV}`);

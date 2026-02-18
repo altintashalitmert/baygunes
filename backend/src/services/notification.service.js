@@ -3,60 +3,73 @@ import pool from '../utils/prisma.js';
 import { sendEmail } from './email.service.js';
 import emailTemplates from './emailTemplates.service.js';
 
-// Redis configuration
-const redisConfig = {
+const buildRedisConfig = () => ({
   redis: process.env.REDIS_URL || {
     host: process.env.REDIS_HOST || 'localhost',
     port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD || undefined
+    password: process.env.REDIS_PASSWORD || undefined,
+  },
+});
+
+let notificationQueue = null;
+let processorInitialized = false;
+
+export const getNotificationQueue = () => {
+  if (!notificationQueue) {
+    notificationQueue = new Queue('email-notifications', buildRedisConfig());
   }
+  return notificationQueue;
 };
 
-// Create notification queue
-const notificationQueue = new Queue('email-notifications', redisConfig);
+export const initNotificationQueueProcessor = () => {
+  if (processorInitialized) return;
 
-// Process jobs
-notificationQueue.process(async (job) => {
-  const { type, data } = job.data;
-  
-  console.log(`📧 Processing notification job: ${type}`, job.id);
-  
-  try {
-    switch (type) {
-      case 'NEW_ORDER':
-        await sendNewOrderNotification(data);
-        break;
-      case 'PRINTER_ASSIGNED':
-        await sendPrinterAssignmentNotification(data);
-        break;
-      case 'FIELD_ASSIGNED':
-        await sendFieldAssignmentNotification(data);
-        break;
-      case 'STATUS_CHANGED':
-        await sendStatusChangeNotification(data);
-        break;
-      case 'DAILY_SUMMARY':
-        await sendDailySummaryNotification(data);
-        break;
-      default:
-        throw new Error(`Unknown notification type: ${type}`);
+  const queue = getNotificationQueue();
+
+  queue.process(async (job) => {
+    const { type, data } = job.data;
+
+    console.log(`📧 Processing notification job: ${type}`, job.id);
+
+    try {
+      switch (type) {
+        case 'NEW_ORDER':
+          await sendNewOrderNotification(data);
+          break;
+        case 'PRINTER_ASSIGNED':
+          await sendPrinterAssignmentNotification(data);
+          break;
+        case 'FIELD_ASSIGNED':
+          await sendFieldAssignmentNotification(data);
+          break;
+        case 'STATUS_CHANGED':
+          await sendStatusChangeNotification(data);
+          break;
+        case 'DAILY_SUMMARY':
+          await sendDailySummaryNotification(data);
+          break;
+        default:
+          throw new Error(`Unknown notification type: ${type}`);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Notification job failed: ${type}`, error);
+      throw error;
     }
-    
-    return { success: true };
-  } catch (error) {
-    console.error(`❌ Notification job failed: ${type}`, error);
-    throw error;
-  }
-});
+  });
 
-// Queue event handlers
-notificationQueue.on('completed', (job, result) => {
-  console.log(`✅ Notification job completed: ${job.id}`);
-});
+  queue.on('completed', (job, result) => {
+    console.log(`✅ Notification job completed: ${job.id}`);
+  });
 
-notificationQueue.on('failed', (job, err) => {
-  console.error(`❌ Notification job failed: ${job.id}`, err.message);
-});
+  queue.on('failed', (job, err) => {
+    console.error(`❌ Notification job failed: ${job.id}`, err.message);
+  });
+
+  processorInitialized = true;
+  console.log('📬 Notification queue processor initialized');
+};
 
 // 1. New Order Notification
 async function sendNewOrderNotification(data) {
@@ -297,7 +310,8 @@ async function logNotification({ userId, orderId, type, template, subject, statu
 // Queue wrapper functions
 export const queueNotification = async (type, data, options = {}) => {
   try {
-    const job = await notificationQueue.add(type, { type, data }, {
+    const queue = getNotificationQueue();
+    const job = await queue.add(type, { type, data }, {
       attempts: 3,
       backoff: {
         type: 'exponential',
@@ -311,7 +325,8 @@ export const queueNotification = async (type, data, options = {}) => {
     return job;
   } catch (error) {
     console.error('Failed to queue notification:', error);
-    throw error;
+    // Notifications are non-critical; do not block main workflow.
+    return null;
   }
 };
 
@@ -324,11 +339,12 @@ export const notifyStatusChange = (orderId, oldStatus, newStatus, changedById) =
 export const notifyDailySummary = (date, stats) => queueNotification('DAILY_SUMMARY', { date, stats });
 
 export default {
+  initNotificationQueueProcessor,
+  getNotificationQueue,
   queueNotification,
   notifyNewOrder,
   notifyPrinterAssigned,
   notifyFieldAssigned,
   notifyStatusChange,
-  notifyDailySummary,
-  notificationQueue
+  notifyDailySummary
 };

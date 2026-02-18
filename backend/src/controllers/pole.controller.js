@@ -1,12 +1,11 @@
 import pool from '../utils/prisma.js';
+import { reverseGeocode, generatePoleCode as generatePoleCodeFromLocation } from '../services/geocoding.service.js';
 
 // GET /api/poles - List all poles
 export const getPoles = async (req, res, next) => {
   try {
-    const { status, city, district } = req.query;
+    const { status, city, district, includeDeleted } = req.query;
     
-    // Query with LEFT JOIN to get active order information
-
     // Query with LEFT JOIN to get active order information
     // Use DISTINCT ON to ensure unique poles even if multiple future orders exist
     // We prioritize orders that started earlier (current ones) over future ones (SCHEDULED)
@@ -26,6 +25,11 @@ export const getPoles = async (req, res, next) => {
         AND o.end_date >= CURRENT_DATE
       WHERE 1=1
     `;
+    
+    // Exclude soft-deleted poles by default
+    if (includeDeleted !== 'true') {
+      query += ` AND p.deleted_at IS NULL`;
+    }
     
     const params = [];
     let paramCount = 1;
@@ -94,13 +98,14 @@ export const createPole = async (req, res, next) => {
     const {
       latitude,
       longitude,
-      city,
-      district,
-      neighborhood,
-      street,
+      city: manualCity,
+      district: manualDistrict,
+      neighborhood: manualNeighborhood,
+      street: manualStreet,
       sequenceNo,
       startDate,
       endDate,
+      useGeocoding = true,
     } = req.body;
 
     // Validation
@@ -109,6 +114,27 @@ export const createPole = async (req, res, next) => {
         success: false,
         error: 'Latitude and longitude are required',
       });
+    }
+
+    let city = manualCity;
+    let district = manualDistrict;
+    let neighborhood = manualNeighborhood;
+    let street = manualStreet;
+
+    // Try reverse geocoding if enabled and manual values not provided
+    if (useGeocoding) {
+      try {
+        const geocodeResult = await reverseGeocode(latitude, longitude);
+        if (geocodeResult) {
+          city = city || geocodeResult.city;
+          district = district || geocodeResult.district;
+          neighborhood = neighborhood || geocodeResult.neighborhood;
+          street = street || geocodeResult.street;
+        }
+      } catch (geoError) {
+        console.error('Geocoding failed:', geoError);
+        // Continue with manual values
+      }
     }
 
     // Generate pole code (e.g., ISKADB01)
@@ -308,10 +334,11 @@ export const updatePole = async (req, res, next) => {
   }
 };
 
-// DELETE /api/poles/:id - Delete pole
+// DELETE /api/poles/:id - Soft delete pole
 export const deletePole = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { force = false } = req.query;
 
     // Check if pole has active orders
     const orders = await pool.query(
@@ -326,27 +353,69 @@ export const deletePole = async (req, res, next) => {
       });
     }
 
+    // Soft delete
     const result = await pool.query(
-      'DELETE FROM poles WHERE id = $1 RETURNING id, pole_code',
+      `UPDATE poles 
+       SET deleted_at = NOW(), 
+           status = 'INACTIVE',
+           updated_at = NOW()
+       WHERE id = $1 
+       AND deleted_at IS NULL
+       RETURNING id, pole_code, deleted_at`,
       [id]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Pole not found',
+        error: 'Pole not found or already deleted',
       });
     }
 
     res.json({
       success: true,
-      message: 'Pole deleted successfully',
+      message: 'Pole soft deleted successfully',
       data: {
         pole: result.rows[0],
       },
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// POST /api/poles/:id/restore - Restore soft-deleted pole
+export const restorePole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `UPDATE poles 
+       SET deleted_at = NULL, 
+           status = 'AVAILABLE',
+           updated_at = NOW()
+       WHERE id = $1 
+       AND deleted_at IS NOT NULL
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Pole not found or not deleted',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Pole restored successfully',
+      data: {
+        pole: result.rows[0],
+      },
+    });
+  } catch (error) {
+    next(error)
   }
 };
 

@@ -13,6 +13,7 @@ import {
   Printer,
   Users,
   X,
+  BookOpen,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -38,6 +39,7 @@ function DashboardLayout() {
     { path: '/pricing', icon: DollarSign2, label: 'Fiyat Ayarları', roles: ['SUPER_ADMIN'] },
     { path: '/reports', icon: FileText, label: 'Raporlar', roles: ['SUPER_ADMIN'] },
     { path: '/settings/notifications', icon: BellRing, label: 'Bildirimler', roles: ['SUPER_ADMIN'] },
+    { path: '/how-to-use', icon: BookOpen, label: 'Nasıl Kullanılır', roles: ['SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD'] },
   ].filter((item) => item.roles.includes(user?.role))
 
   const activePageLabel = navItems.find((item) => location.pathname === item.path)?.label || 'Panel'

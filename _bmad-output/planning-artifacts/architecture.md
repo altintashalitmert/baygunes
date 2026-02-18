@@ -324,14 +324,121 @@ CREATE TABLE files (
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     file_type file_type NOT NULL,
     file_url VARCHAR(500) NOT NULL,
+    thumbnail_url VARCHAR(500), -- Added for mobile optimization
     original_name VARCHAR(255),
     file_size INTEGER, -- bytes
     uploaded_by UUID NOT NULL REFERENCES users(id),
+    deleted_at TIMESTAMP, -- Added for soft delete
     uploaded_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_files_order ON files(order_id);
 CREATE INDEX idx_files_type ON files(file_type);
+CREATE INDEX idx_files_deleted ON files(deleted_at);
+```
+
+#### 7. Password Reset Tokens Table
+```sql
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_reset_token ON password_reset_tokens(token);
+CREATE INDEX idx_reset_user ON password_reset_tokens(user_id);
+```
+
+#### 8. Notification Logs Table
+```sql
+CREATE TABLE notification_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    order_id UUID,
+    type VARCHAR(50) NOT NULL, -- 'EMAIL', 'SMS'
+    template VARCHAR(100),
+    subject VARCHAR(255),
+    content TEXT,
+    status VARCHAR(50) NOT NULL, -- 'SENT', 'FAILED', 'PENDING'
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    sent_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_notif_user ON notification_logs(user_id);
+CREATE INDEX idx_notif_status ON notification_logs(status);
+CREATE INDEX idx_notif_created ON notification_logs(created_at DESC);
+```
+
+#### 9. User Notification Preferences Table
+```sql
+CREATE TABLE user_notification_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email_enabled BOOLEAN DEFAULT true,
+    new_order_enabled BOOLEAN DEFAULT true,
+    status_change_enabled BOOLEAN DEFAULT true,
+    assignment_enabled BOOLEAN DEFAULT true,
+    reminder_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_notif_prefs_user ON user_notification_preferences(user_id);
+```
+
+#### 10. Pricing History Table
+```sql
+CREATE TABLE pricing_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pricing_key VARCHAR(100) NOT NULL REFERENCES pricing_config(key),
+    old_value DECIMAL(10, 2) NOT NULL,
+    new_value DECIMAL(10, 2) NOT NULL,
+    unit VARCHAR(20),
+    changed_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_pricing_history_key ON pricing_history(pricing_key);
+CREATE INDEX idx_pricing_history_date ON pricing_history(created_at DESC);
+```
+
+#### 11. Login Attempts Table
+```sql
+CREATE TABLE login_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(50),
+    success BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_login_email ON login_attempts(email);
+CREATE INDEX idx_login_ip ON login_attempts(ip_address);
+CREATE INDEX idx_login_created ON login_attempts(created_at);
+```
+
+#### 12. Reports Table
+```sql
+CREATE TABLE reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(50) NOT NULL, -- 'PRINTER', 'FIELD', 'FINANCIAL'
+    title VARCHAR(255) NOT NULL,
+    file_url VARCHAR(500) NOT NULL,
+    file_type VARCHAR(50) NOT NULL, -- 'PDF', 'EXCEL', 'CSV'
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    generated_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_reports_type ON reports(type);
+CREATE INDEX idx_reports_generated ON reports(generated_by);
+CREATE INDEX idx_reports_created ON reports(created_at DESC);
 ```
 
 ---

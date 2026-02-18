@@ -797,3 +797,234 @@ export const getMyTasks = async (req, res, next) => {
     next(error);
   }
 };
+
+// DELETE /api/orders/:id - Cancel order (soft delete)
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const user = req.user;
+
+    // Only Super Admin can cancel orders
+    if (user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only SUPER_ADMIN can cancel orders',
+      });
+    }
+
+    // Get order
+    const orderResult = await pool.query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Cannot cancel already completed or cancelled orders
+    if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot cancel order in ${order.status} status`,
+      });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Soft delete - update order status to CANCELLED
+      await client.query(
+        `UPDATE orders 
+         SET status = 'CANCELLED', 
+             cancelled_at = NOW(),
+             cancelled_by = $1,
+             cancellation_reason = $2,
+             updated_at = NOW() 
+         WHERE id = $3`,
+        [user.id, reason || 'Cancelled by admin', id]
+      );
+
+      // Record in workflow history
+      await client.query(
+        `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, order.status, 'CANCELLED', user.id, `Order cancelled. Reason: ${reason || 'No reason provided'}`]
+      );
+
+      // Free up the pole
+      await client.query(
+        `UPDATE poles SET status = 'AVAILABLE', updated_at = NOW() WHERE id = $1`,
+        [order.pole_id]
+      );
+
+      await client.query('COMMIT');
+
+      res.json({
+        success: true,
+        message: 'Order cancelled successfully',
+        data: { orderId: id, status: 'CANCELLED' },
+      });
+
+      // Send notification to related parties
+      try {
+        const recipients = [];
+        if (order.assigned_printer) {
+          const printerEmail = await getUserEmailById(pool, order.assigned_printer);
+          if (printerEmail) recipients.push(printerEmail);
+        }
+        if (order.assigned_field) {
+          const fieldEmail = await getUserEmailById(pool, order.assigned_field);
+          if (fieldEmail) recipients.push(fieldEmail);
+        }
+        
+        const adminEmails = await getAdminEmails(pool);
+        recipients.push(...adminEmails);
+
+        await sendEmail({
+          to: [...new Set(recipients)].filter(Boolean),
+          subject: `Sipariş İptal Edildi: ${order.client_name}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #dc2626;">Sipariş İptal Edildi</h2>
+              <p><strong>Müşteri:</strong> ${order.client_name}</p>
+              <p><strong>Sebep:</strong> ${reason || 'Belirtilmedi'}</p>
+              <p><strong>İptal Eden:</strong> ${user.name}</p>
+            </div>
+          `
+        });
+      } catch (e) {
+        console.error('Cancellation email failed:', e);
+      }
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PATCH /api/orders/:id - Update order (only when PENDING)
+export const updateOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { clientName, clientContact, startDate, endDate, price } = req.body;
+    const user = req.user;
+
+    // Get order
+    const orderResult = await pool.query('SELECT * FROM orders WHERE id = $1', [id]);
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Only allow edit when PENDING or SCHEDULED
+    if (!['PENDING', 'SCHEDULED'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order can only be edited when in PENDING or SCHEDULED status',
+      });
+    }
+
+    // Check permissions
+    if (user.role === 'PRINTER' || user.role === 'FIELD') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only SUPER_ADMIN and OPERATOR can edit orders',
+      });
+    }
+
+    // Validate dates if provided
+    let newStartDate = order.start_date;
+    let newEndDate = order.end_date;
+    
+    if (startDate || endDate) {
+      newStartDate = startDate ? normalizeDate(startDate) : order.start_date;
+      newEndDate = endDate ? normalizeDate(endDate) : order.end_date;
+      
+      if (!newStartDate || !newEndDate) {
+        return res.status(400).json({ success: false, error: 'Invalid date format' });
+      }
+
+      const normalizedStart = toStartOfDay(newStartDate);
+      const normalizedEnd = toStartOfDay(newEndDate);
+
+      if (normalizedEnd <= normalizedStart) {
+        return res.status(400).json({ success: false, error: 'endDate must be after startDate' });
+      }
+
+      // Check for overlaps (excluding current order)
+      const overlapResult = await pool.query(
+        `SELECT id FROM orders 
+         WHERE pole_id = $1 
+         AND id != $2
+         AND status NOT IN ('COMPLETED', 'EXPIRED', 'CANCELLED')
+         AND (
+           (start_date <= $3 AND end_date >= $3) OR
+           (start_date <= $4 AND end_date >= $4) OR
+           (start_date >= $3 AND end_date <= $4)
+         )`,
+        [order.pole_id, id, normalizedStart, normalizedEnd]
+      );
+
+      if (overlapResult.rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          error: 'Date range conflicts with existing orders',
+        });
+      }
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update order
+      const updatedOrderResult = await client.query(
+        `UPDATE orders 
+         SET client_name = COALESCE($1, client_name),
+             client_contact = COALESCE($2, client_contact),
+             start_date = COALESCE($3, start_date),
+             end_date = COALESCE($4, end_date),
+             price = COALESCE($5, price),
+             updated_at = NOW()
+         WHERE id = $6
+         RETURNING *`,
+        [
+          clientName || null,
+          clientContact || null,
+          newStartDate || null,
+          newEndDate || null,
+          price || null,
+          id
+        ]
+      );
+
+      // Record in workflow history
+      await client.query(
+        `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, order.status, order.status, user.id, 'Order details updated']
+      );
+
+      await client.query('COMMIT');
+
+      res.json({
+        success: true,
+        message: 'Order updated successfully',
+        data: { order: updatedOrderResult.rows[0] },
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    next(error);
+  }
+};

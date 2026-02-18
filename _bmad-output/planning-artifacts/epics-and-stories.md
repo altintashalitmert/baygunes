@@ -32,6 +32,7 @@ Bu proje 8 ana epic'e bölünmüştür. Her epic bir feature domain'i temsil ede
 **Priority:** P0 (Blocker)  
 **Description:** Kullanıcı kimlik doğrulama, authorization ve kullanıcı yönetimi sistemi.  
 **Business Value:** Sistem güvenliği ve rol tabanlı erişim kontrolü için kritik.
+**Status:** ✅ COMPLETED
 
 ### Story 1.1: Backend Project Setup
 **As a** developer  
@@ -230,6 +231,13 @@ const roleMiddleware = (allowedRoles) => {
 **Priority:** P0 (Blocker)  
 **Description:** Harita entegrasyonu ve direk yönetimi.  
 **Business Value:** Core feature - direk seçimi ve rezervasyon için gerekli.
+**Status:** ✅ COMPLETED
+
+### Additional Completed Features:
+- ✅ Reverse geocoding (Nominatim API)
+- ✅ Automatic address extraction from coordinates
+- ✅ Soft delete for poles
+- ✅ Pole restore functionality
 
 ### Story 2.1: Frontend Project Setup
 **As a** developer  
@@ -403,6 +411,13 @@ const getMarkerColor = (status, endDate) => {
 **Priority:** P0 (Blocker)  
 **Description:** Sipariş oluşturma ve 6-state workflow yönetimi.  
 **Business Value:** Core feature - işin akışı bu sistem üzerinden.
+**Status:** ✅ COMPLETED
+
+### Additional Completed Features:
+- ✅ Order cancellation (soft delete)
+- ✅ Order edit (PENDING status only)
+- ✅ Workflow rollback (Super Admin only)
+- ✅ Rollback audit logging
 
 ### Story 3.1: Order Creation Backend
 **As a** operator  
@@ -603,6 +618,12 @@ cron.schedule('0 0 * * *', async () => {
 **Priority:** P0 (Blocker)  
 **Description:** Dosya yükleme, indirme ve storage yönetimi.  
 **Business Value:** Sözleşme ve görsellerin saklanması zorunlu.
+**Status:** ✅ COMPLETED
+
+### Additional Completed Features:
+- ✅ Thumbnail generation (Sharp library)
+- ✅ Soft delete for files
+- ✅ Mobile-optimized image loading
 
 ### Story 4.1: File Upload Backend
 **As a** operator  
@@ -733,6 +754,15 @@ app.get('/api/files/:id', async (req, res) => {
 **Priority:** P1 (High)  
 **Description:** Email bildirimleri ve Bull Queue entegrasyonu.  
 **Business Value:** Kullanıcıların yeni işlerden haberdar olması kritik.
+**Status:** ✅ COMPLETED
+
+### Implemented Features:
+- ✅ Bull Queue integration
+- ✅ Notification Log table
+- ✅ Retry mechanism (3 attempts with exponential backoff)
+- ✅ User notification preferences
+- ✅ Async email processing
+- ✅ Failed notification tracking
 
 ### Story 5.1: Bull Queue Setup & Email Service
 **As a** system  
@@ -807,6 +837,15 @@ emailQueue.process(async (job) => {
 **Priority:** P1 (High)  
 **Description:** PDF raporlar ve hak ediş hesaplama.  
 **Business Value:** Tedarikçi ödemelerini takip etmek için gerekli.
+**Status:** ✅ COMPLETED
+
+### Implemented Features:
+- ✅ Printer Report (PDF generation)
+- ✅ Field Team Report (PDF generation)
+- ✅ Financial Summary Report
+- ✅ Excel/CSV Export
+- ✅ Report history tracking
+- ✅ Automatic KDV calculation
 
 ### Story 6.1: Pricing Config UI
 **As a** super admin  
@@ -913,6 +952,13 @@ res.send(csv);
 **Priority:** P1 (High)  
 **Description:** Admin panelinden fiyat ayarları yönetimi.  
 **Business Value:** Fiyatlar değiştiğinde kod değişikliği gerektirmemeli.
+**Status:** ✅ COMPLETED
+
+### Implemented Features:
+- ✅ Dynamic pricing configuration
+- ✅ Pricing history tracking
+- ✅ Audit log for price changes
+- ✅ Default values: Print 500TL, Mount 200TL, Dismount 150TL, VAT %20
 
 ### Story 7.1: Pricing CRUD Backend
 **As a** developer  

@@ -5,6 +5,7 @@ import {
   createPole,
   updatePole,
   deletePole,
+  restorePole,
   getAvailablePoles,
   checkAvailability,
 } from '../controllers/pole.controller.js';
@@ -40,5 +41,8 @@ router.patch('/:id', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), updatePole);
 
 // DELETE /api/poles/:id - Delete pole (SUPER_ADMIN only)
 router.delete('/:id', roleMiddleware(['SUPER_ADMIN']), deletePole);
+
+// POST /api/poles/:id/restore - Restore soft-deleted pole (SUPER_ADMIN only)
+router.post('/:id/restore', roleMiddleware(['SUPER_ADMIN']), restorePole);
 
 export default router;

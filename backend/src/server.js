@@ -74,6 +74,10 @@ app.use('/api/poles', poleRoutes);
 // Order routes
 app.use('/api/orders', orderRoutes);
 
+// Workflow routes
+import workflowRoutes from './routes/workflow.routes.js';
+app.use('/api/workflow', workflowRoutes);
+
 // Account routes
 import accountRoutes from './routes/account.routes.js';
 app.use('/api/accounts', accountRoutes);
@@ -89,6 +93,10 @@ app.use('/api/transactions', transactionRoutes);
 // Notification routes
 import notificationRoutes from './routes/notification.routes.js';
 app.use('/api/notifications', notificationRoutes);
+
+// Report routes
+import reportRoutes from './routes/report.routes.js';
+app.use('/api/reports', reportRoutes);
 
 
 // Error handling middleware

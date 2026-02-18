@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import { Toaster } from 'react-hot-toast'
 import React, { lazy, Suspense } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
+import LoadingSpinner from './components/LoadingSpinner'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -16,6 +18,8 @@ const PrintTasksPage = lazy(() => import('./pages/PrintTasksPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
+const HowToUsePage = lazy(() => import('./pages/HowToUsePage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function getDefaultRoute(user) {
   if (user?.role === 'PRINTER') return '/print-tasks'
@@ -32,8 +36,8 @@ function RoleRoute({ user, roles, children }) {
 
 function PageLoader() {
   return (
-    <div className="h-full min-h-[200px] flex items-center justify-center">
-      <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+    <div className="h-screen flex items-center justify-center">
+      <LoadingSpinner size="lg" message="Sayfa yükleniyor..." />
     </div>
   )
 }
@@ -51,7 +55,7 @@ function App() {
   const defaultRoute = getDefaultRoute(user)
 
   return (
-    <>
+    <ErrorBoundary>
       <Toaster position="top-right" />
       <Routes>
       {/* Public routes */}
@@ -114,13 +118,18 @@ function App() {
             {lazyElement(NotificationSettingsPage)}
           </RoleRoute>
         } />
+        <Route path="how-to-use" element={lazyElement(HowToUsePage)} />
       </Route>
 
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to={defaultRoute} />} />
+      {/* 404 Not Found */}
+      <Route path="*" element={
+        <Suspense fallback={<PageLoader />}>
+          <NotFoundPage />
+        </Suspense>
+      } />
     </Routes>
-    </>
+    </ErrorBoundary>
   )
 }
 

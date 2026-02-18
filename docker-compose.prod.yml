@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: baygunes-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=8h
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ELASTICSEARCH_URL=${ELASTICSEARCH_URL:-http://hesapos-elasticsearch:9200}
+    expose:
+      - "3000"
+    networks:
+      - baygunes-network
+      - coolify
+    volumes:
+      - baygunes-uploads:/app/public/uploads
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.baygunes-backend.rule=Host(`api.baygunes.35.246.196.169.sslip.io`)"
+      - "traefik.http.routers.baygunes-backend.entrypoints=http"
+      - "traefik.http.services.baygunes-backend.loadbalancer.server.port=3000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: baygunes-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-https://api.baygunes.35.246.196.169.sslip.io}
+    expose:
+      - "80"
+    networks:
+      - baygunes-network
+      - coolify
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.baygunes-frontend.rule=Host(`baygunes.35.246.196.169.sslip.io`)"
+      - "traefik.http.routers.baygunes-frontend.entrypoints=http"
+      - "traefik.http.services.baygunes-frontend.loadbalancer.server.port=80"
+
+  redis:
+    image: redis:7-alpine
+    container_name: baygunes-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - baygunes-redis-data:/data
+    networks:
+      - baygunes-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  baygunes-network:
+    driver: bridge
+  coolify:
+    external: true
+
+volumes:
+  baygunes-redis-data:
+  baygunes-uploads:

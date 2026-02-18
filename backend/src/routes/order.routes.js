@@ -8,6 +8,8 @@ import {
   assignPrinter,
   assignFieldTeam,
   getMyTasks,
+  cancelOrder,
+  updateOrder,
 } from '../controllers/order.controller.js';
 import { generateOrderPdf } from '../controllers/report.controller.js';
 import { authMiddleware, roleMiddleware } from '../middleware/auth.middleware.js';
@@ -20,7 +22,9 @@ router.post('/', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), cr
 router.get('/', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD']), getOrders);
 router.get('/my-tasks', authMiddleware, roleMiddleware(['PRINTER', 'FIELD']), getMyTasks);
 router.get('/:id', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD']), getOrderById);
+router.patch('/:id', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), updateOrder);
 router.patch('/:id/status', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD']), updateOrderStatus);
+router.delete('/:id', authMiddleware, roleMiddleware(['SUPER_ADMIN']), cancelOrder);
 router.patch('/:id/assign-printer', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), assignPrinter);
 router.patch('/:id/assign-field', authMiddleware, roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), assignFieldTeam);
 

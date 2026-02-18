@@ -41,22 +41,28 @@ enum FileType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      UserRole
-  name      String
-  phone     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  role               UserRole
+  name               String
+  phone              String?
+  active             Boolean  @default(true)
+  emailNotifications Boolean  @default(true) @map("email_notifications")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
-  createdOrders     Order[]          @relation("CreatedOrders")
-  printerOrders     Order[]          @relation("PrinterOrders")
-  fieldOrders       Order[]          @relation("FieldOrders")
+  createdOrders     Order[]                      @relation("CreatedOrders")
+  printerOrders     Order[]                      @relation("PrinterOrders")
+  fieldOrders       Order[]                      @relation("FieldOrders")
   workflowChanges   WorkflowHistory[]
   uploadedFiles     File[]
+  notificationLogs  NotificationLog[]
+  passwordResetTokens PasswordResetToken[]
+  notificationPrefs  UserNotificationPreferences?
+  pricingHistory    PricingHistory[]
+  pricingUpdates    PricingConfig[]
 
   @@index([role])
   @@index([email])
@@ -74,6 +80,7 @@ model Pole {
   street       String?
   sequenceNo   Int?       @map("sequence_no")
   status       PoleStatus @default(AVAILABLE)
+  deletedAt    DateTime?  @map("deleted_at")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
@@ -82,6 +89,7 @@ model Pole {
 
   @@index([status])
   @@index([poleCode])
+  @@index([deletedAt])
   @@map("poles")
 }
 
@@ -98,6 +106,9 @@ model Order {
   createdById     String      @map("created_by")
   assignedPrinter String?     @map("assigned_printer")
   assignedField   String?     @map("assigned_field")
+  cancelledAt     DateTime?   @map("cancelled_at")
+  cancelledBy     String?     @map("cancelled_by")
+  cancellationReason String?  @map("cancellation_reason")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
@@ -114,6 +125,7 @@ model Order {
   @@index([startDate, endDate])
   @@index([assignedPrinter])
   @@index([assignedField])
+  @@index([cancelledAt])
   @@map("orders")
 }
 
@@ -124,6 +136,7 @@ model WorkflowHistory {
   newStatus OrderStatus @map("new_status")
   changedBy String      @map("changed_by")
   notes     String?
+  isRollback Boolean   @default(false) @map("is_rollback")
   timestamp DateTime    @default(now())
 
   // Relations
@@ -141,8 +154,31 @@ model PricingConfig {
   value     Decimal  @db.Decimal(10, 2)
   unit      String? // 'TL', '%'
   updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  // Relations
+  user   User?             @relation(fields: [updatedBy], references: [id])
+  history PricingHistory[]
 
   @@map("pricing_config")
+}
+
+model PricingHistory {
+  id           String   @id @default(uuid())
+  pricingKey   String   @map("pricing_key")
+  oldValue     Decimal  @db.Decimal(10, 2) @map("old_value")
+  newValue     Decimal  @db.Decimal(10, 2) @map("new_value")
+  unit         String?
+  changedBy    String   @map("changed_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  pricingConfig PricingConfig @relation(fields: [pricingKey], references: [key])
+  user          User          @relation(fields: [changedBy], references: [id])
+
+  @@index([pricingKey])
+  @@index([createdAt(sort: Desc)])
+  @@map("pricing_history")
 }
 
 model File {
@@ -150,9 +186,11 @@ model File {
   orderId      String   @map("order_id")
   fileType     FileType @map("file_type")
   fileUrl      String   @map("file_url")
+  thumbnailUrl String?  @map("thumbnail_url")
   originalName String?  @map("original_name")
   fileSize     Int?     @map("file_size")
   uploadedBy   String   @map("uploaded_by")
+  deletedAt    DateTime? @map("deleted_at")
   uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
   // Relations
@@ -161,5 +199,92 @@ model File {
 
   @@index([orderId])
   @@index([fileType])
+  @@index([deletedAt])
   @@map("files")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model NotificationLog {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  orderId      String?   @map("order_id")
+  type         String    // 'EMAIL', 'SMS'
+  template     String    // Template name
+  subject      String?
+  content      String?   @db.Text
+  status       String    // 'SENT', 'FAILED', 'PENDING'
+  errorMessage String?   @map("error_message") @db.Text
+  retryCount   Int       @default(0) @map("retry_count")
+  sentAt       DateTime? @map("sent_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("notification_logs")
+}
+
+model UserNotificationPreferences {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  emailEnabled       Boolean  @default(true) @map("email_enabled")
+  newOrderEnabled    Boolean  @default(true) @map("new_order_enabled")
+  statusChangeEnabled Boolean @default(true) @map("status_change_enabled")
+  assignmentEnabled  Boolean  @default(true) @map("assignment_enabled")
+  reminderEnabled    Boolean  @default(true) @map("reminder_enabled")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notification_preferences")
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String
+  ipAddress String   @map("ip_address")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("login_attempts")
+}
+
+model Report {
+  id           String   @id @default(uuid())
+  type         String   // 'PRINTER', 'FIELD', 'FINANCIAL'
+  title        String
+  fileUrl      String   @map("file_url")
+  fileType     String   @map("file_type") // 'PDF', 'EXCEL', 'CSV'
+  startDate    DateTime @map("start_date")
+  endDate      DateTime @map("end_date")
+  generatedBy  String   @map("generated_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([type])
+  @@index([generatedBy])
+  @@index([createdAt(sort: Desc)])
+  @@map("reports")
 }

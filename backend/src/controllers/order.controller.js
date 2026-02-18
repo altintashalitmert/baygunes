@@ -1,5 +1,6 @@
 import pool from '../utils/prisma.js';
 import { sendEmail, WORKFLOW_EMAILS } from '../services/email.service.js';
+import { notifyNewOrder, notifyStatusChange, notifyPrinterAssigned, notifyFieldAssigned } from '../services/notification.service.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -253,18 +254,13 @@ export const createOrder = async (req, res, next) => {
 
       // Send Notification (Async, don't block response)
       try {
-        const orderForMail = { 
-           ...createdOrders[0], 
-           pole_code: 'Toplu İşlem', // Or fetch actual pole code if needed
-           start_date: start,
-           end_date: end 
-        };
-        const emailContent = WORKFLOW_EMAILS.CREATED(orderForMail);
-        const recipients = await getAdminEmails(pool);
-        sendNotificationToRecipients(recipients, emailContent).catch(err => {
-          console.error('Create Order Email failed:', err);
-        });
-      } catch (e) { console.error('Email prep failed:', e); }
+        // Queue notification for each created order
+        for (const order of createdOrders) {
+          await notifyNewOrder(order.id);
+        }
+      } catch (e) { 
+        console.error('Notification queue failed:', e); 
+      }
 
     } catch (err) {
       await client.query('ROLLBACK');
@@ -472,15 +468,12 @@ export const updateOrderStatus = async (req, res, next) => {
       
       await client.query('COMMIT');
 
-      // Send Notification
+      // Send Notification (Async)
       try {
-        const emailContent = WORKFLOW_EMAILS.STATUS_CHANGE(order, order.status, newStatus);
-        const recipients = await getNotificationRecipients(pool, order, newStatus);
-
-        sendNotificationToRecipients(recipients, emailContent).catch(err => {
-          console.error('Email send failed:', err);
-        });
-      } catch (e) { console.error('Email prep failed:', e); }
+        await notifyStatusChange(id, order.status, newStatus, user.id);
+      } catch (e) { 
+        console.error('Status change notification failed:', e); 
+      }
 
       res.json({
         success: true,
@@ -664,6 +657,15 @@ export const assignPrinter = async (req, res, next) => {
       client.release();
     }
 
+    // Notify printer (async)
+    try {
+      if (printerId !== previousAssigneeId) {
+        await notifyPrinterAssigned(id, printerId);
+      }
+    } catch (e) {
+      console.error('Printer assignment notification failed:', e);
+    }
+
     res.json({
       success: true,
       data: {
@@ -751,6 +753,16 @@ export const assignFieldTeam = async (req, res, next) => {
       throw err;
     } finally {
       client.release();
+    }
+
+    // Notify field team (async)
+    try {
+      if (fieldId !== previousAssigneeId) {
+        const isMount = orderResult.rows[0].status === 'AWAITING_MOUNT';
+        await notifyFieldAssigned(id, fieldId, isMount);
+      }
+    } catch (e) {
+      console.error('Field assignment notification failed:', e);
     }
 
     res.json({

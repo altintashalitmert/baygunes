@@ -18,6 +18,7 @@ if (process.env.NODE_ENV !== 'production') {
 import { initScheduler } from './cron/scheduler.js';
 import { errorLogger, initElasticsearch, requestLogger } from './services/logging.service.js';
 import { initNotificationQueueProcessor } from './services/notification.service.js';
+import { ensureSchemaCompatibility } from './utils/schemaCompatibility.js';
 
 
 const app = express();
@@ -141,8 +142,13 @@ app.use((req, res) => {
   });
 });
 
-export const startServer = () => {
+export const startServer = async () => {
   ensureRequiredEnv();
+  try {
+    await ensureSchemaCompatibility();
+  } catch (error) {
+    console.error('⚠️ Schema compatibility check failed:', error?.message || error);
+  }
   initScheduler();
   const redisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
   if (redisConfigured) {
@@ -159,7 +165,10 @@ const isDirectRun =
   process.argv[1] && path.resolve(process.argv[1]) === __filename;
 
 if (isDirectRun) {
-  startServer();
+  startServer().catch((error) => {
+    console.error('❌ Failed to start server:', error?.message || error);
+    process.exit(1);
+  });
 }
 
 export default app;

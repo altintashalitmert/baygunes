@@ -21,6 +21,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     active BOOLEAN DEFAULT TRUE,
+    email_notifications BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -40,12 +41,14 @@ CREATE TABLE poles (
     street VARCHAR(255),
     sequence_no INTEGER,
     status pole_status DEFAULT 'AVAILABLE',
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX idx_poles_status ON poles(status);
 CREATE INDEX idx_poles_code ON poles(pole_code);
+CREATE INDEX idx_poles_deleted_at ON poles(deleted_at);
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
@@ -67,6 +70,9 @@ CREATE TABLE orders (
     created_by UUID NOT NULL REFERENCES users(id),
     assigned_printer UUID REFERENCES users(id),
     assigned_field UUID REFERENCES users(id),
+    cancelled_at TIMESTAMP,
+    cancelled_by UUID REFERENCES users(id),
+    cancellation_reason TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT valid_dates CHECK (end_date > start_date)
@@ -77,6 +83,7 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_dates ON orders(start_date, end_date);
 CREATE INDEX idx_orders_printer ON orders(assigned_printer);
 CREATE INDEX idx_orders_field ON orders(assigned_field);
+CREATE INDEX idx_orders_cancelled_at ON orders(cancelled_at);
 
 -- Workflow History table
 CREATE TABLE workflow_history (

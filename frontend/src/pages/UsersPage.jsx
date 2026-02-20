@@ -4,6 +4,7 @@ import { userApi } from '../api/userApi'
 import { Plus, Search, Edit2, Trash2, Shield, User, Printer, Hammer, Loader2, X, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { createPortal } from 'react-dom'
 
 export default function UsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -218,13 +219,18 @@ export default function UsersPage() {
             }
           }}
           isPending={createMutation.isPending || updateMutation.isPending}
+          errorMessage={
+            createMutation.error?.response?.data?.error ||
+            updateMutation.error?.response?.data?.error ||
+            null
+          }
         />
       )}
     </div>
   )
 }
 
-function UserFormModal({ isOpen, onClose, user, onSubmit, isPending }) {
+function UserFormModal({ isOpen, onClose, user, onSubmit, isPending, errorMessage }) {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -235,9 +241,10 @@ function UserFormModal({ isOpen, onClose, user, onSubmit, isPending }) {
   })
 
   if (!isOpen) return null
+  if (typeof document === 'undefined') return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <h3 className="font-bold text-lg text-gray-900">
@@ -333,6 +340,12 @@ function UserFormModal({ isOpen, onClose, user, onSubmit, isPending }) {
             <label htmlFor="isActive" className="text-sm text-gray-700 font-medium">Kullanıcı Aktif</label>
           </div>
 
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="pt-4 flex gap-3">
              <button
                type="button"
@@ -353,6 +366,7 @@ function UserFormModal({ isOpen, onClose, user, onSubmit, isPending }) {
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

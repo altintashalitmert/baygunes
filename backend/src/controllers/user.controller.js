@@ -1,5 +1,6 @@
 import pool from '../utils/prisma.js';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 
 // GET /api/users - List all users (SUPER_ADMIN only)
 export const getUsers = async (req, res, next) => {
@@ -51,13 +52,22 @@ export const getUserById = async (req, res, next) => {
 // POST /api/users - Create new user
 export const createUser = async (req, res, next) => {
   try {
-    const { email, password, name, role, phone } = req.body;
+    const { email, password, name, role, phone, active } = req.body;
 
     // Validation
     if (!email || !password || !name || !role) {
       return res.status(400).json({
         success: false,
         error: 'Email, password, name, and role are required',
+      });
+    }
+
+    const normalizedRole = String(role).trim().toUpperCase();
+    const validRoles = ['SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD'];
+    if (!validRoles.includes(normalizedRole)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user role',
       });
     }
 
@@ -76,13 +86,15 @@ export const createUser = async (req, res, next) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = randomUUID();
+    const isActive = typeof active === 'boolean' ? active : true;
 
     // Create user
     const result = await pool.query(
-      `INSERT INTO users (email, password, name, role, phone) 
-       VALUES ($1, $2, $3, $4, $5) 
+      `INSERT INTO users (id, email, password, name, role, phone, active) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING id, email, name, role, phone, active, created_at`,
-      [email, hashedPassword, name, role, phone]
+      [userId, email, hashedPassword, name, normalizedRole, phone || null, isActive]
     );
 
     res.status(201).json({

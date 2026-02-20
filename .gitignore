@@ -47,9 +47,12 @@ coverage/
 # Cache
 .cache/
 .parcel-cache/
+frontend/temp-cache/
 
 # Misc
 *.pem
 *.key
 gsckey.json
 .vercel
+backend_error.log
+backend/backend_error.log

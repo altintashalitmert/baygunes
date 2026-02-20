@@ -16,13 +16,57 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 import { initScheduler } from './cron/scheduler.js';
-import { errorLogger, initElasticsearch, requestLogger } from './services/logging.service.js';
+import { errorLogger, initElasticsearch, logError, requestLogger } from './services/logging.service.js';
 import { initNotificationQueueProcessor } from './services/notification.service.js';
 import { ensureSchemaCompatibility } from './utils/schemaCompatibility.js';
 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const normalizeOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return `${parsed.protocol}//${parsed.host}`.toLowerCase();
+  } catch {
+    return null;
+  }
+};
+
+const expandOriginVariants = (origin) => {
+  const normalized = normalizeOrigin(origin);
+  if (!normalized) return [];
+
+  const parsed = new URL(normalized);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return [normalized];
+  }
+
+  // Support both http/https for the same host to avoid config drift.
+  return [`http://${parsed.host}`.toLowerCase(), `https://${parsed.host}`.toLowerCase()];
+};
+
+const resolveCorsConfig = () => {
+  const defaults = ['http://localhost:5173', 'https://localhost:5173'];
+  const rawOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || defaults.join(',')).trim();
+
+  const entries = rawOrigins
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (entries.includes('*')) {
+    return { allowAll: true, origins: [] };
+  }
+
+  const origins = [...new Set(entries.flatMap(expandOriginVariants))];
+  return {
+    allowAll: false,
+    origins: origins.length > 0 ? origins : defaults,
+  };
+};
+
+const corsConfig = resolveCorsConfig();
 
 if (process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', 1);
@@ -36,7 +80,15 @@ const ensureRequiredEnv = () => {
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || corsConfig.allowAll) {
+      callback(null, true);
+      return;
+    }
+
+    const normalized = normalizeOrigin(origin);
+    callback(null, Boolean(normalized && corsConfig.origins.includes(normalized)));
+  },
   credentials: true,
 }));
 
@@ -76,6 +128,38 @@ app.get('/api/health', (req, res) => {
     message: 'PBMS API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
+  });
+});
+
+app.post('/api/log/error', (req, res) => {
+  const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+
+  if (!message) {
+    return res.status(400).json({
+      success: false,
+      error: 'message is required',
+    });
+  }
+
+  logError(message, {
+    component: 'frontend-error-boundary',
+    error: {
+      message,
+      stack: req.body?.stack,
+    },
+    metadata: {
+      componentStack: req.body?.componentStack,
+      frontendApp: req.body?.app,
+      frontendTimestamp: req.body?.timestamp,
+    },
+    url: req.body?.url || req.get('referer'),
+    userAgent: req.body?.userAgent || req.get('user-agent'),
+    ip: req.ip,
+  });
+
+  return res.status(202).json({
+    success: true,
+    message: 'Error log accepted',
   });
 });
 
@@ -158,6 +242,7 @@ export const startServer = async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV}`);
     console.log(`🔗 API health: http://localhost:${PORT}/api/health`);
+    console.log(`🌐 CORS origins: ${corsConfig.allowAll ? '*' : corsConfig.origins.join(', ')}`);
   });
 };
 

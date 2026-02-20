@@ -5,9 +5,16 @@ import fs from 'fs';
 import path from 'path';
 
 // Helper to log errors to a file
+const isOrderDebugLogEnabled = process.env.ORDER_DEBUG_LOG === 'true';
 const logDebug = (msg) => {
+  if (!isOrderDebugLogEnabled) return;
+
   const logPath = path.join(process.cwd(), 'backend_error.log');
-  fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
+  try {
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch (error) {
+    console.error('Failed to write order debug log:', error?.message || error);
+  }
 };
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'OPERATOR'];

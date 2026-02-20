@@ -65,13 +65,19 @@ export const bulkDeletePoles = async (req, res, next) => {
     }
 
     const result = await pool.query(
-      'DELETE FROM poles WHERE id = ANY($1) RETURNING id, pole_code',
+      `UPDATE poles
+       SET deleted_at = NOW(),
+           status = 'INACTIVE',
+           updated_at = NOW()
+       WHERE id = ANY($1)
+       AND deleted_at IS NULL
+       RETURNING id, pole_code, deleted_at`,
       [poleIds]
     );
 
     res.json({
       success: true,
-      message: `Deleted ${result.rows.length} poles`,
+      message: `Soft deleted ${result.rows.length} poles`,
       data: {
         count: result.rows.length,
         poles: result.rows,

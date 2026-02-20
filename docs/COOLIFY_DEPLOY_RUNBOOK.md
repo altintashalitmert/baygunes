@@ -36,8 +36,21 @@ Environment değişkenleri:
 - `NODE_ENV=production`
 - `PORT=3000`
 - `FRONTEND_URL=https://app.<domain>`
+- `CORS_ORIGINS=https://app.<domain>,http://app.<domain>`
 - `DATABASE_URL=...`
 - `JWT_SECRET=...`
+
+Post-deploy komutu (önerilen):
+
+```bash
+cd /app/backend && npx prisma generate && npx prisma migrate deploy && node setup_accounts.js && node setup_transactions.js && node setup_notifications.js
+```
+
+Kaçınılması gereken komut:
+
+```bash
+npx prisma db push --accept-data-loss
+```
 
 Deploy sonrası doğrulama:
 
@@ -80,6 +93,11 @@ npx prisma migrate deploy
 Not:
 - İlk kurulumda schema drift varsa kontrollü şekilde `prisma db push` kullanılabilir.
 - Tercih edilen yöntem migration dosyalarıyla `migrate deploy`dur.
+- `seed` scriptini her deployda çalıştırma. Sadece ilk kurulumda manuel çalıştır:
+
+```bash
+cd /app/backend && node prisma/seed.js
+```
 
 ## 8) Kalıcı Dosya (Uploads) Notu
 
@@ -91,4 +109,3 @@ Not:
 
 - GitHub `main` branch push -> Coolify auto deploy
 - Opsiyonel: GitHub Actions ile test/build geçmeden deploy tetikleme
-

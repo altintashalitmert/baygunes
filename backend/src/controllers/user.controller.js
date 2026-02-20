@@ -91,8 +91,8 @@ export const createUser = async (req, res, next) => {
 
     // Create user
     const result = await pool.query(
-      `INSERT INTO users (id, email, password, name, role, phone, active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO users (id, email, password, name, role, phone, active, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
        RETURNING id, email, name, role, phone, active, created_at`,
       [userId, email, hashedPassword, name, normalizedRole, phone || null, isActive]
     );

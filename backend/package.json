@@ -22,7 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@elastic/elasticsearch": "^9.3.1",
+    "@elastic/elasticsearch": "^8.13.0",
     "@prisma/client": "^5.8.0",
     "axios": "^1.13.5",
     "bcryptjs": "^2.4.3",

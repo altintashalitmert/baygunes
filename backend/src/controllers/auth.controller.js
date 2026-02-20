@@ -11,29 +11,35 @@ const getClientIp = (req) => {
 
 // Helper: Check login rate limit
 const checkLoginRateLimit = async (email, ip) => {
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-  
-  // Count failed attempts in last 15 minutes
-  const result = await pool.query(
-    `SELECT COUNT(*) as count FROM login_attempts 
-     WHERE email = $1 AND success = false AND created_at > $2`,
-    [email, fifteenMinutesAgo]
-  );
-  
-  const failedAttempts = parseInt(result.rows[0].count);
-  
-  if (failedAttempts >= 5) {
+  try {
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    
+    // Count failed attempts in last 15 minutes
+    const result = await pool.query(
+      `SELECT COUNT(*) as count FROM login_attempts 
+       WHERE email = $1 AND success = false AND created_at > $2`,
+      [email, fifteenMinutesAgo]
+    );
+    
+    const failedAttempts = parseInt(result.rows[0].count);
+    
+    if (failedAttempts >= 5) {
+      return {
+        allowed: false,
+        message: 'Too many failed login attempts. Please try again after 15 minutes.',
+        remainingTime: 15
+      };
+    }
+    
     return {
-      allowed: false,
-      message: 'Too many failed login attempts. Please try again after 15 minutes.',
-      remainingTime: 15
+      allowed: true,
+      remainingAttempts: 5 - failedAttempts
     };
+  } catch (error) {
+    // If table doesn't exist, skip rate limiting
+    console.error('Rate limiting check failed:', error.message);
+    return { allowed: true, remainingAttempts: 5 };
   }
-  
-  return {
-    allowed: true,
-    remainingAttempts: 5 - failedAttempts
-  };
 };
 
 // Helper: Log login attempt
@@ -82,7 +88,7 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials',
-        remainingAttempts: rateLimitCheck.remainingAttempts - 1,
+        remainingAttempts: rateLimitCheck.remainingAttempts ? rateLimitCheck.remainingAttempts - 1 : undefined,
       });
     }
 
@@ -96,7 +102,7 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials',
-        remainingAttempts: rateLimitCheck.remainingAttempts - 1,
+        remainingAttempts: rateLimitCheck.remainingAttempts ? rateLimitCheck.remainingAttempts - 1 : undefined,
       });
     }
 

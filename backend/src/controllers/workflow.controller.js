@@ -1,5 +1,6 @@
 import pool from '../utils/prisma.js';
 import { sendEmail } from '../services/email.service.js';
+import { randomUUID } from 'crypto';
 
 // Helper to get user email
 const getUserEmailById = async (dbClient, userId) => {
@@ -103,9 +104,9 @@ export const rollbackOrderStatus = async (req, res, next) => {
 
       // Record rollback in workflow history
       await client.query(
-        `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes, is_rollback) 
-         VALUES ($1, $2, $3, $4, $5, true)`,
-        [orderId, oldStatus, targetStatus, user.id, `ROLLBACK: ${reason || 'No reason provided'}`]
+        `INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes, is_rollback)
+         VALUES ($1, $2, $3, $4, $5, $6, true)`,
+        [randomUUID(), orderId, oldStatus, targetStatus, user.id, `ROLLBACK: ${reason || 'No reason provided'}`]
       );
 
       // Handle pole status based on rollback target

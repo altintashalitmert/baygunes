@@ -3,6 +3,49 @@ import pool from './prisma.js';
 let schemaChecked = false;
 
 const STATEMENTS = [
+  // Legacy installs may have UUID primary keys without DEFAULT values.
+  // Enforce defaults so inserts remain compatible with old schemas.
+  `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'poles' AND column_name = 'id'
+      ) THEN
+        EXECUTE 'ALTER TABLE poles ALTER COLUMN id SET DEFAULT gen_random_uuid()';
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'id'
+      ) THEN
+        EXECUTE 'ALTER TABLE orders ALTER COLUMN id SET DEFAULT gen_random_uuid()';
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'files' AND column_name = 'id'
+      ) THEN
+        EXECUTE 'ALTER TABLE files ALTER COLUMN id SET DEFAULT gen_random_uuid()';
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'workflow_history' AND column_name = 'id'
+      ) THEN
+        EXECUTE 'ALTER TABLE workflow_history ALTER COLUMN id SET DEFAULT gen_random_uuid()';
+      END IF;
+    END $$`,
+
   // Soft-delete support used by poles/report endpoints.
   `ALTER TABLE poles ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE`,
   `CREATE INDEX IF NOT EXISTS idx_poles_deleted_at ON poles(deleted_at)`,
@@ -64,4 +107,3 @@ export const ensureSchemaCompatibility = async () => {
     client.release();
   }
 };
-

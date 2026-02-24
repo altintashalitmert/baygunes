@@ -3,6 +3,7 @@ import { sendEmail, WORKFLOW_EMAILS } from '../services/email.service.js';
 import { notifyNewOrder, notifyStatusChange, notifyPrinterAssigned, notifyFieldAssigned } from '../services/notification.service.js';
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 
 // Helper to log errors to a file
 const isOrderDebugLogEnabled = process.env.ORDER_DEBUG_LOG === 'true';
@@ -50,6 +51,29 @@ const getUserEmailById = async (dbClient, userId) => {
   return result.rows[0]?.email || null;
 };
 
+const findFallbackAssigneeId = async (dbClient, role, preferredUserId = null) => {
+  if (preferredUserId) {
+    const preferred = await dbClient.query(
+      `SELECT id
+       FROM users
+       WHERE id = $1 AND role = $2 AND active = true
+       LIMIT 1`,
+      [preferredUserId, role]
+    );
+    if (preferred.rows.length > 0) return preferred.rows[0].id;
+  }
+
+  const fallback = await dbClient.query(
+    `SELECT id
+     FROM users
+     WHERE role = $1 AND active = true
+     ORDER BY created_at ASC
+     LIMIT 1`,
+    [role]
+  );
+  return fallback.rows[0]?.id || null;
+};
+
 const getNotificationRecipients = async (dbClient, order, newStatus) => {
   const adminEmails = await getAdminEmails(dbClient);
 
@@ -81,9 +105,10 @@ const buildAssignmentAuditNote = ({ assignmentType, previousAssigneeId, nextAssi
 
 const insertAssignmentAudit = async (dbClient, { orderId, status, changedBy, assignmentType, previousAssigneeId, nextAssigneeId }) => {
   await dbClient.query(
-    `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes)
-     VALUES ($1, $2, $3, $4, $5)`,
+    `INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
     [
+      randomUUID(),
       orderId,
       status,
       status,
@@ -233,11 +258,22 @@ export const createOrder = async (req, res, next) => {
         // Insert
         const orderRes = await client.query(
             `INSERT INTO orders (
-              pole_id, account_id, client_name, client_contact, start_date, end_date, 
+              id, pole_id, account_id, client_name, client_contact, start_date, end_date,
               status, created_by, price, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
             RETURNING *`,
-            [pId, accountId, fetchedClientName || 'Unknown', clientContact || '', start, end, initialStatus, req.user.id, price || 0]
+            [
+              randomUUID(),
+              pId,
+              accountId,
+              fetchedClientName || 'Unknown',
+              clientContact || '',
+              start,
+              end,
+              initialStatus,
+              req.user.id,
+              price || 0,
+            ]
         );
 
         // Update Pole
@@ -408,18 +444,41 @@ export const updateOrderStatus = async (req, res, next) => {
       return res.status(400).json({ success: false, error: validation.error });
     }
 
+    let autoAssignedPrinterId = null;
+    let autoAssignedFieldId = null;
+
     if (order.status === 'PENDING' && newStatus === 'PRINTING' && !order.assigned_printer) {
-      return res.status(400).json({
-        success: false,
-        error: 'assigned_printer is required before moving to PRINTING',
-      });
+      autoAssignedPrinterId = await findFallbackAssigneeId(
+        pool,
+        'PRINTER',
+        user.role === 'PRINTER' ? user.id : null
+      );
+      if (!autoAssignedPrinterId && ['SUPER_ADMIN', 'OPERATOR'].includes(user.role)) {
+        autoAssignedPrinterId = user.id;
+      }
+      if (!autoAssignedPrinterId) {
+        return res.status(400).json({
+          success: false,
+          error: 'PRINTING geçişi için aktif bir PRINTER kullanıcısı atanmalı',
+        });
+      }
     }
 
     if (order.status === 'PRINTING' && newStatus === 'AWAITING_MOUNT' && !order.assigned_field) {
-      return res.status(400).json({
-        success: false,
-        error: 'assigned_field is required before moving to AWAITING_MOUNT',
-      });
+      autoAssignedFieldId = await findFallbackAssigneeId(
+        pool,
+        'FIELD',
+        user.role === 'FIELD' ? user.id : null
+      );
+      if (!autoAssignedFieldId && ['SUPER_ADMIN', 'OPERATOR'].includes(user.role)) {
+        autoAssignedFieldId = user.id;
+      }
+      if (!autoAssignedFieldId) {
+        return res.status(400).json({
+          success: false,
+          error: 'AWAITING_MOUNT geçişi için aktif bir FIELD kullanıcısı atanmalı',
+        });
+      }
     }
 
     if (order.status === 'AWAITING_MOUNT' && newStatus === 'LIVE') {
@@ -453,6 +512,24 @@ export const updateOrderStatus = async (req, res, next) => {
     try {
       await client.query('BEGIN');
 
+      if (autoAssignedPrinterId) {
+        await client.query(
+          `UPDATE orders
+           SET assigned_printer = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [autoAssignedPrinterId, id]
+        );
+      }
+
+      if (autoAssignedFieldId) {
+        await client.query(
+          `UPDATE orders
+           SET assigned_field = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [autoAssignedFieldId, id]
+        );
+      }
+
       // Update Order
       const updatedOrderResult = await client.query(
         'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
@@ -461,8 +538,8 @@ export const updateOrderStatus = async (req, res, next) => {
 
       // Record History
       await client.query(
-        'INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes) VALUES ($1, $2, $3, $4, $5)',
-        [id, order.status, newStatus, user.id, notes || null]
+        'INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes) VALUES ($1, $2, $3, $4, $5, $6)',
+        [randomUUID(), id, order.status, newStatus, user.id, notes || null]
       );
 
       // Side Effects
@@ -557,9 +634,9 @@ export const uploadOrderFile = async (req, res, next) => {
       }
 
       await pool.query(
-        `INSERT INTO files (order_id, file_type, file_url, original_name, file_size, uploaded_by)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, proofType, filePath, file.originalname, file.size, req.user.id]
+        `INSERT INTO files (id, order_id, file_type, file_url, original_name, file_size, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [randomUUID(), id, proofType, filePath, file.originalname, file.size, req.user.id]
       );
       result = await pool.query('SELECT * FROM orders WHERE id = $1', [id]);
     } else {
@@ -866,9 +943,9 @@ export const cancelOrder = async (req, res, next) => {
 
       // Record in workflow history
       await client.query(
-        `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes) 
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, order.status, 'CANCELLED', user.id, `Order cancelled. Reason: ${reason || 'No reason provided'}`]
+        `INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [randomUUID(), id, order.status, 'CANCELLED', user.id, `Order cancelled. Reason: ${reason || 'No reason provided'}`]
       );
 
       // Free up the pole
@@ -1025,9 +1102,9 @@ export const updateOrder = async (req, res, next) => {
 
       // Record in workflow history
       await client.query(
-        `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes) 
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, order.status, order.status, user.id, 'Order details updated']
+        `INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [randomUUID(), id, order.status, order.status, user.id, 'Order details updated']
       );
 
       await client.query('COMMIT');

@@ -1,5 +1,6 @@
 import pool from '../utils/prisma.js';
 import { reverseGeocode, generatePoleCode as generatePoleCodeFromLocation } from '../services/geocoding.service.js';
+import { randomUUID } from 'crypto';
 
 // GET /api/poles - List all poles
 export const getPoles = async (req, res, next) => {
@@ -167,10 +168,10 @@ export const createPole = async (req, res, next) => {
 
       // Insert pole
       const poleResult = await client.query(
-        `INSERT INTO poles (pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'AVAILABLE') 
+        `INSERT INTO poles (id, pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'AVAILABLE')
          RETURNING *`,
-        [poleCode, latitude, longitude, city, district, neighborhood, street, sequenceNo]
+        [randomUUID(), poleCode, latitude, longitude, city, district, neighborhood, street, sequenceNo]
       );
 
       const pole = poleResult.rows[0];
@@ -178,9 +179,9 @@ export const createPole = async (req, res, next) => {
       // Create order if dates provided
       if (startDate && endDate) {
         await client.query(
-          `INSERT INTO orders (pole_id, client_name, client_contact, start_date, end_date, status, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [pole.id, 'Default Client', '', startDate, endDate, 'LIVE', req.user.id]
+          `INSERT INTO orders (id, pole_id, client_name, client_contact, start_date, end_date, status, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [randomUUID(), pole.id, 'Default Client', '', startDate, endDate, 'LIVE', req.user.id]
         );
 
         // Update pole status to OCCUPIED
@@ -282,9 +283,9 @@ export const updatePole = async (req, res, next) => {
         } else {
           // Create new order
           await client.query(
-            `INSERT INTO orders (pole_id, client_name, client_contact, start_date, end_date, status, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [id, 'Updated Client', '', startDate, endDate, 'LIVE', req.user.id]
+            `INSERT INTO orders (id, pole_id, client_name, client_contact, start_date, end_date, status, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [randomUUID(), id, 'Updated Client', '', startDate, endDate, 'LIVE', req.user.id]
           );
         }
       }

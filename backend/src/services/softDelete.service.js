@@ -1,4 +1,5 @@
 import pool from '../utils/prisma.js';
+import { randomUUID } from 'crypto';
 
 // Soft delete a pole
 export const softDeletePole = async (poleId, deletedBy = null) => {
@@ -112,9 +113,9 @@ export const softDeleteOrder = async (orderId, deletedBy, reason = null) => {
     
     // Log in workflow history
     await client.query(
-      `INSERT INTO workflow_history (order_id, old_status, new_status, changed_by, notes)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [orderId, order.status, 'CANCELLED', deletedBy, `Order deleted: ${reason || 'No reason provided'}`]
+      `INSERT INTO workflow_history (id, order_id, old_status, new_status, changed_by, notes)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [randomUUID(), orderId, order.status, 'CANCELLED', deletedBy, `Order deleted: ${reason || 'No reason provided'}`]
     );
     
     // Free up the pole

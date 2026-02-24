@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import pool from '../src/utils/prisma.js';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -72,11 +73,12 @@ const ensureAccount = async (client, account) => {
 
   const inserted = await client.query(
     `
-      INSERT INTO accounts (type, company_name, contact_name, email, phone, tax_no, tax_office, address)
-      VALUES ('CORPORATE', $1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO accounts (id, type, company_name, contact_name, email, phone, tax_no, tax_office, address)
+      VALUES ($1, 'CORPORATE', $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, company_name
     `,
     [
+      randomUUID(),
       account.company_name,
       account.contact_name,
       account.email,
@@ -122,8 +124,8 @@ async function seedTokat() {
     for (const pole of TOKAT_POLES) {
       const upsertPole = await client.query(
         `
-          INSERT INTO poles (pole_code, latitude, longitude, city, district, neighborhood, street, status, created_at, updated_at, deleted_at)
-          VALUES ($1, $2, $3, 'Tokat', $4, $5, $6, 'AVAILABLE', NOW(), NOW(), NULL)
+          INSERT INTO poles (id, pole_code, latitude, longitude, city, district, neighborhood, street, status, created_at, updated_at, deleted_at)
+          VALUES ($1, $2, $3, $4, 'Tokat', $5, $6, $7, 'AVAILABLE', NOW(), NOW(), NULL)
           ON CONFLICT (pole_code) DO UPDATE
             SET latitude = EXCLUDED.latitude,
                 longitude = EXCLUDED.longitude,
@@ -135,7 +137,7 @@ async function seedTokat() {
                 updated_at = NOW()
           RETURNING id, pole_code
         `,
-        [pole.code, pole.latitude, pole.longitude, pole.district, pole.neighborhood, pole.street]
+        [randomUUID(), pole.code, pole.latitude, pole.longitude, pole.district, pole.neighborhood, pole.street]
       );
       poles.push(upsertPole.rows[0]);
     }
@@ -196,6 +198,8 @@ async function seedTokat() {
         } else {
           const insertOrderColumns = ['pole_id', 'account_id', 'client_name', 'client_contact', 'start_date', 'end_date', 'status', 'created_by', 'created_at', 'updated_at'];
           const insertOrderValues = [pole.id, account.id, `TOKAT DEMO - ${account.company_name}`, account.phone, startDate.toISOString().slice(0, 10), endDate.toISOString().slice(0, 10), status, adminId];
+          insertOrderColumns.unshift('id');
+          insertOrderValues.unshift(randomUUID());
 
           if (hasOrderPrice) {
             insertOrderColumns.splice(8, 0, 'price');
@@ -232,10 +236,10 @@ async function seedTokat() {
           if (transactionExists.rows.length === 0) {
             await client.query(
               `
-                INSERT INTO transactions (account_id, order_id, amount, type, description, transaction_date, created_by, created_at)
-                VALUES ($1, $2, $3, 'BANK_TRANSFER', $4, NOW(), $5, NOW())
+                INSERT INTO transactions (id, account_id, order_id, amount, type, description, transaction_date, created_by, created_at)
+                VALUES ($1, $2, $3, $4, 'BANK_TRANSFER', $5, NOW(), $6, NOW())
               `,
-              [account.id, orderId, price, 'Tokat demo tamamlanan iş tahsilatı', adminId]
+              [randomUUID(), account.id, orderId, price, 'Tokat demo tamamlanan iş tahsilatı', adminId]
             );
             createdTransactions += 1;
           }

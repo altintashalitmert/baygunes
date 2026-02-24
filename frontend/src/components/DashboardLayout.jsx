@@ -24,6 +24,7 @@ function DashboardLayout() {
   const location = useLocation()
 
   const handleLogout = () => {
+    setIsSidebarOpen(false)
     logout()
     navigate('/login')
   }
@@ -44,12 +45,14 @@ function DashboardLayout() {
 
   const activePageLabel = navItems.find((item) => location.pathname === item.path)?.label || 'Panel'
 
-  const SidebarContent = () => (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <p className="text-base font-bold text-slate-900">Baygunes PBMS</p>
-        <p className="text-xs text-slate-500">{user?.name} ({user?.role})</p>
-      </div>
+  const SidebarContent = ({ showProfile = true }) => (
+    <div className="flex h-full min-h-0 flex-col">
+      {showProfile && (
+        <div className="border-b border-slate-200 px-5 py-4">
+          <p className="text-base font-bold text-slate-900">Baygunes PBMS</p>
+          <p className="text-xs text-slate-500">{user?.name} ({user?.role})</p>
+        </div>
+      )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
         {navItems.map((item) => (
@@ -71,7 +74,7 @@ function DashboardLayout() {
         ))}
       </nav>
 
-      <div className="border-t border-slate-200 p-3">
+      <div className="border-t border-slate-200 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={handleLogout}
@@ -106,7 +109,18 @@ function DashboardLayout() {
               <p className="text-xs text-slate-500">Operasyon Paneli</p>
             </div>
           </div>
-          <div className="hidden text-xs text-emerald-700 sm:block">Sistem Aktif</div>
+          <div className="flex items-center gap-2">
+            <div className="hidden text-xs text-emerald-700 sm:block">Sistem Aktif</div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 lg:hidden"
+              aria-label="Çıkış Yap"
+            >
+              <LogOut className="h-4 w-4" />
+              Çıkış
+            </button>
+          </div>
         </header>
 
         <main className="min-h-0 flex-1 overflow-auto p-4 lg:p-6">
@@ -117,9 +131,12 @@ function DashboardLayout() {
       {isSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setIsSidebarOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 border-r border-slate-200 bg-white">
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-slate-200 bg-white">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-900">Menü</p>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Menü</p>
+                <p className="text-[11px] text-slate-500">{user?.name}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(false)}
@@ -129,7 +146,9 @@ function DashboardLayout() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <SidebarContent />
+            <div className="min-h-0 flex-1">
+              <SidebarContent showProfile={false} />
+            </div>
           </aside>
         </div>
       )}

@@ -168,8 +168,10 @@ export const createPole = async (req, res, next) => {
 
       // Insert pole
       const poleResult = await client.query(
-        `INSERT INTO poles (id, pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'AVAILABLE')
+        `INSERT INTO poles (
+           id, pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, status, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'AVAILABLE', NOW(), NOW())
          RETURNING *`,
         [randomUUID(), poleCode, latitude, longitude, city, district, neighborhood, street, sequenceNo]
       );
@@ -179,8 +181,10 @@ export const createPole = async (req, res, next) => {
       // Create order if dates provided
       if (startDate && endDate) {
         await client.query(
-          `INSERT INTO orders (id, pole_id, client_name, client_contact, start_date, end_date, status, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          `INSERT INTO orders (
+             id, pole_id, client_name, client_contact, start_date, end_date, status, created_by, created_at, updated_at
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
           [randomUUID(), pole.id, 'Default Client', '', startDate, endDate, 'LIVE', req.user.id]
         );
 
@@ -283,8 +287,10 @@ export const updatePole = async (req, res, next) => {
         } else {
           // Create new order
           await client.query(
-            `INSERT INTO orders (id, pole_id, client_name, client_contact, start_date, end_date, status, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            `INSERT INTO orders (
+               id, pole_id, client_name, client_contact, start_date, end_date, status, created_by, created_at, updated_at
+             )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
             [randomUUID(), id, 'Updated Client', '', startDate, endDate, 'LIVE', req.user.id]
           );
         }

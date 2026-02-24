@@ -9,15 +9,17 @@ import { useAuthStore } from '../stores/authStore'
 function PrintTasksPage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     onConfirm: () => {},
     title: '',
     message: '',
   })
+  const printTasksQueryKey = ['print-tasks', user?.role]
 
   const { data: ordersData = [], isLoading } = useQuery({
-    queryKey: ['print-tasks', user?.role],
+    queryKey: printTasksQueryKey,
     queryFn: async () => {
       if (user?.role === 'PRINTER') {
         const myTasks = await orderApi.getMyTasks()
@@ -32,12 +34,36 @@ function PrintTasksPage() {
       return [...(pending?.data?.data?.orders || []), ...(printing?.data?.data?.orders || [])]
     },
     enabled: Boolean(user),
+    staleTime: 0,
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }) => orderApi.updateStatus(id, { newStatus }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['print-tasks'] })
+    onMutate: async ({ id, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: printTasksQueryKey, exact: true })
+      const previousOrders = queryClient.getQueryData(printTasksQueryKey) || []
+
+      queryClient.setQueryData(printTasksQueryKey, (oldOrders = []) =>
+        oldOrders.map((order) => (order.id === id ? { ...order, status: newStatus } : order)),
+      )
+
+      return { previousOrders }
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData(printTasksQueryKey, context.previousOrders)
+      }
+      alert(error?.response?.data?.error || 'Durum güncellenemedi.')
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: printTasksQueryKey, exact: true })
+      await queryClient.refetchQueries({ queryKey: printTasksQueryKey, exact: true, type: 'active' })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    onSettled: () => {
+      setUpdatingOrderId(null)
     },
   })
 
@@ -52,7 +78,14 @@ function PrintTasksPage() {
       message: isStarting
         ? 'Bu iş emri için baskı sürecini başlatmak istiyor musunuz?'
         : 'Baskının tamamlandığını onaylıyor musunuz?',
-      onConfirm: () => statusMutation.mutate({ id: orderId, newStatus }),
+      onConfirm: async () => {
+        setUpdatingOrderId(orderId)
+        try {
+          await statusMutation.mutateAsync({ id: orderId, newStatus })
+        } catch (_error) {
+          // Error handling is managed in mutation onError.
+        }
+      },
     })
   }
 
@@ -108,10 +141,11 @@ function PrintTasksPage() {
                   <button
                     type="button"
                     onClick={() => openStatusConfirm(order.id, 'PRINTING')}
+                    disabled={statusMutation.isPending && updatingOrderId === order.id}
                     className="mt-3 inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800"
                   >
                     <Play className="h-4 w-4" />
-                    Baskıyı Başlat
+                    {statusMutation.isPending && updatingOrderId === order.id ? 'Güncelleniyor...' : 'Baskıyı Başlat'}
                   </button>
                 </div>
               ))}
@@ -155,10 +189,11 @@ function PrintTasksPage() {
                     <button
                       type="button"
                       onClick={() => openStatusConfirm(order.id, 'AWAITING_MOUNT')}
+                      disabled={statusMutation.isPending && updatingOrderId === order.id}
                       className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
                     >
                       <CheckCircle2 className="h-4 w-4" />
-                      Baskı Tamamlandı
+                      {statusMutation.isPending && updatingOrderId === order.id ? 'Güncelleniyor...' : 'Baskı Tamamlandı'}
                     </button>
                   </div>
                 </div>

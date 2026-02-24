@@ -12,15 +12,17 @@ function FieldTasksPage() {
 
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [uploadLoading, setUploadLoading] = useState(false)
+  const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [confirmConfig, setConfirmConfig] = useState({
     isOpen: false,
     onConfirm: () => {},
     title: '',
     message: '',
   })
+  const fieldTasksQueryKey = ['field-tasks', user?.role]
 
   const { data: ordersData = [], isLoading } = useQuery({
-    queryKey: ['field-tasks', user?.role],
+    queryKey: fieldTasksQueryKey,
     queryFn: async () => {
       if (user?.role === 'FIELD') {
         const myTasks = await orderApi.getMyTasks()
@@ -39,13 +41,37 @@ function FieldTasksPage() {
       ]
     },
     enabled: Boolean(user),
+    staleTime: 0,
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }) => orderApi.updateStatus(id, { newStatus }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['field-tasks'] })
+    onMutate: async ({ id, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: fieldTasksQueryKey, exact: true })
+      const previousOrders = queryClient.getQueryData(fieldTasksQueryKey) || []
+
+      queryClient.setQueryData(fieldTasksQueryKey, (oldOrders = []) =>
+        oldOrders.map((order) => (order.id === id ? { ...order, status: newStatus } : order)),
+      )
+
+      return { previousOrders }
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousOrders) {
+        queryClient.setQueryData(fieldTasksQueryKey, context.previousOrders)
+      }
+      alert(error?.response?.data?.error || 'Durum güncellenemedi.')
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: fieldTasksQueryKey, exact: true })
+      await queryClient.refetchQueries({ queryKey: fieldTasksQueryKey, exact: true, type: 'active' })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
       setSelectedOrder(null)
+    },
+    onSettled: () => {
+      setUpdatingOrderId(null)
     },
   })
 
@@ -77,7 +103,7 @@ function FieldTasksPage() {
         }
       })
 
-      queryClient.invalidateQueries({ queryKey: ['field-tasks'] })
+      queryClient.invalidateQueries({ queryKey: fieldTasksQueryKey, exact: true })
     } catch (err) {
       alert(`Fotoğraf yüklenemedi: ${err.response?.data?.error || err.message}`)
     } finally {
@@ -93,11 +119,17 @@ function FieldTasksPage() {
       message: isMountFlow
         ? 'Montajın tamamlandığını onaylıyor musunuz?'
         : 'Sökümün tamamlandığını onaylıyor musunuz?',
-      onConfirm: () =>
-        statusMutation.mutate({
-          id: order.id,
-          newStatus: isMountFlow ? 'LIVE' : 'COMPLETED',
-        }),
+      onConfirm: async () => {
+        setUpdatingOrderId(order.id)
+        try {
+          await statusMutation.mutateAsync({
+            id: order.id,
+            newStatus: isMountFlow ? 'LIVE' : 'COMPLETED',
+          })
+        } catch (_error) {
+          // Error handling is managed in mutation onError.
+        }
+      },
     })
   }
 
@@ -250,11 +282,11 @@ function FieldTasksPage() {
             <button
               type="button"
               onClick={() => openCompleteConfirm(selectedOrder)}
-              disabled={!hasProof || statusMutation.isPending}
+              disabled={!hasProof || (statusMutation.isPending && updatingOrderId === selectedOrder.id)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckCircle2 className="h-4 w-4" />
-              {completeLabel}
+              {statusMutation.isPending && updatingOrderId === selectedOrder.id ? 'Güncelleniyor...' : completeLabel}
             </button>
           </div>
         </div>
@@ -262,7 +294,7 @@ function FieldTasksPage() {
 
       <ConfirmModal
         {...confirmConfig}
-        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        onClose={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   )

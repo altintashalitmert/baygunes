@@ -16,7 +16,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 import { initScheduler } from './cron/scheduler.js';
-import { errorLogger, initElasticsearch, logError, requestLogger } from './services/logging.service.js';
+import { errorLogger, getElasticsearchStatus, initElasticsearch, logError, requestLogger } from './services/logging.service.js';
 import { initNotificationQueueProcessor } from './services/notification.service.js';
 import { ensureSchemaCompatibility } from './utils/schemaCompatibility.js';
 
@@ -122,12 +122,14 @@ import userRoutes from './routes/user.routes.js';
 import poleRoutes from './routes/pole.routes.js';
 import orderRoutes from './routes/order.routes.js';
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  const elasticsearch = await getElasticsearchStatus();
   res.json({
     status: 'OK',
     message: 'PBMS API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
+    elasticsearch,
   });
 });
 

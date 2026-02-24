@@ -3,6 +3,8 @@ import pool from '../utils/prisma.js';
 import { sendEmail } from './email.service.js';
 import emailTemplates from './emailTemplates.service.js';
 
+const isRedisConfigured = () => Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+
 const buildRedisConfig = () => ({
   redis: process.env.REDIS_URL || {
     host: process.env.REDIS_HOST || 'localhost',
@@ -15,6 +17,7 @@ let notificationQueue = null;
 let processorInitialized = false;
 
 export const getNotificationQueue = () => {
+  if (!isRedisConfigured()) return null;
   if (!notificationQueue) {
     notificationQueue = new Queue('email-notifications', buildRedisConfig());
   }
@@ -22,6 +25,10 @@ export const getNotificationQueue = () => {
 };
 
 export const initNotificationQueueProcessor = () => {
+  if (!isRedisConfigured()) {
+    console.log('📭 Notification queue disabled (REDIS_URL/REDIS_HOST not configured)');
+    return;
+  }
   if (processorInitialized) return;
 
   const queue = getNotificationQueue();
@@ -310,7 +317,12 @@ async function logNotification({ userId, orderId, type, template, subject, statu
 // Queue wrapper functions
 export const queueNotification = async (type, data, options = {}) => {
   try {
+    if (!isRedisConfigured()) {
+      return null;
+    }
     const queue = getNotificationQueue();
+    if (!queue) return null;
+
     const job = await queue.add(type, { type, data }, {
       attempts: 3,
       backoff: {

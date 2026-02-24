@@ -98,7 +98,13 @@ export const ensureSchemaCompatibility = async () => {
     `);
 
     for (const statement of STATEMENTS) {
-      await client.query(statement);
+      try {
+        await client.query(statement);
+      } catch (error) {
+        // Legacy databases can have type mismatches (e.g. TEXT vs UUID FKs).
+        // Skip incompatible statements and continue applying the rest.
+        console.warn('⚠️ Schema compatibility statement skipped:', error?.message || error);
+      }
     }
 
     schemaChecked = true;

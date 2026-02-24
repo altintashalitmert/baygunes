@@ -552,19 +552,18 @@ export const updateOrderStatus = async (req, res, next) => {
       
       await client.query('COMMIT');
 
-      // Send Notification (Async)
-      try {
-        await notifyStatusChange(id, order.status, newStatus, user.id);
-      } catch (e) { 
-        console.error('Status change notification failed:', e); 
-      }
-
+      const responseOrder = updatedOrderResult.rows[0];
       res.json({
         success: true,
         data: {
-          order: updatedOrderResult.rows[0],
+          order: responseOrder,
           message: `Status updated from ${order.status} to ${newStatus}`
         }
+      });
+
+      // Notification should never block API response.
+      notifyStatusChange(id, order.status, newStatus, user.id).catch((e) => {
+        console.error('Status change notification failed:', e);
       });
 
     } catch (err) {
@@ -741,15 +740,6 @@ export const assignPrinter = async (req, res, next) => {
       client.release();
     }
 
-    // Notify printer (async)
-    try {
-      if (printerId !== previousAssigneeId) {
-        await notifyPrinterAssigned(id, printerId);
-      }
-    } catch (e) {
-      console.error('Printer assignment notification failed:', e);
-    }
-
     res.json({
       success: true,
       data: {
@@ -757,6 +747,13 @@ export const assignPrinter = async (req, res, next) => {
         message: 'Printer assigned successfully',
       },
     });
+
+    // Notification should never block API response.
+    if (printerId !== previousAssigneeId) {
+      notifyPrinterAssigned(id, printerId).catch((e) => {
+        console.error('Printer assignment notification failed:', e);
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -839,16 +836,6 @@ export const assignFieldTeam = async (req, res, next) => {
       client.release();
     }
 
-    // Notify field team (async)
-    try {
-      if (fieldId !== previousAssigneeId) {
-        const isMount = orderResult.rows[0].status === 'AWAITING_MOUNT';
-        await notifyFieldAssigned(id, fieldId, isMount);
-      }
-    } catch (e) {
-      console.error('Field assignment notification failed:', e);
-    }
-
     res.json({
       success: true,
       data: {
@@ -856,6 +843,14 @@ export const assignFieldTeam = async (req, res, next) => {
         message: 'Field team assigned successfully',
       },
     });
+
+    // Notification should never block API response.
+    if (fieldId !== previousAssigneeId) {
+      const isMount = orderResult.rows[0].status === 'AWAITING_MOUNT';
+      notifyFieldAssigned(id, fieldId, isMount).catch((e) => {
+        console.error('Field assignment notification failed:', e);
+      });
+    }
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -18,11 +18,18 @@ import ConfirmModal from '../components/ConfirmModal'
 import BulkOperationsModal from '../components/BulkOperationsModal'
 import CreateOrderModal from '../components/CreateOrderModal'
 import OrderDetailsModal from '../components/OrderDetailsModal'
+import StreetViewModal from '../components/StreetViewModal'
 
 const statusFilters = [
   { label: 'Tumu', value: '' },
   { label: 'Musait', value: 'AVAILABLE' },
   { label: 'Dolu', value: 'OCCUPIED' },
+]
+
+const poleTypeFilters = [
+  { label: 'Tum Tipler', value: '' },
+  { label: 'Normal', value: 'NORMAL' },
+  { label: 'Aydinlatmali', value: 'AYDINLATMALI' },
 ]
 
 const toReadableStatus = (status) => {
@@ -31,16 +38,35 @@ const toReadableStatus = (status) => {
   return status || '-'
 }
 
+const toReadablePoleType = (poleType) => {
+  if (poleType === 'AYDINLATMALI') return 'Aydinlatmali'
+  return 'Normal'
+}
+
+const getPoleType = (pole) => pole.pole_type || pole.poleType || 'NORMAL'
+const normalizeValue = (value) => (value || '').trim()
+const uniqueSorted = (values) =>
+  Array.from(new Set(values.map(normalizeValue).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, 'tr')
+  )
+
 function PolesPage() {
+  const streetViewApiKey = (import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY || '').trim()
+
   const [selectedPoleId, setSelectedPoleId] = useState(null)
   const [selectedPoleIds, setSelectedPoleIds] = useState([])
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [viewMode, setViewMode] = useState('list')
+  const [streetViewPole, setStreetViewPole] = useState(null)
 
   const [searchText, setSearchText] = useState('')
+  const [cityFilter, setCityFilter] = useState('')
+  const [districtFilter, setDistrictFilter] = useState('')
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [poleTypeFilter, setPoleTypeFilter] = useState('')
 
   const [bulkStatus, setBulkStatus] = useState('')
   const [showBulkModal, setShowBulkModal] = useState(false)
@@ -61,6 +87,7 @@ function PolesPage() {
     district: '',
     neighborhood: '',
     street: '',
+    poleType: 'NORMAL',
     sequenceNo: 1,
   })
   const [editFormData, setEditFormData] = useState(null)
@@ -107,14 +134,88 @@ function PolesPage() {
     enabled: Boolean(selectedPole?.active_order_id),
   })
 
-  const filteredPoles = poles.filter((pole) => {
+  const cityOptions = useMemo(() => uniqueSorted(poles.map((pole) => pole.city)), [poles])
+  const districtOptions = useMemo(
+    () =>
+      uniqueSorted(
+        poles
+          .filter((pole) => cityFilter === '' || normalizeValue(pole.city) === cityFilter)
+          .map((pole) => pole.district)
+      ),
+    [poles, cityFilter]
+  )
+  const neighborhoodOptions = useMemo(
+    () =>
+      uniqueSorted(
+        poles
+          .filter((pole) => cityFilter === '' || normalizeValue(pole.city) === cityFilter)
+          .filter((pole) => districtFilter === '' || normalizeValue(pole.district) === districtFilter)
+          .map((pole) => pole.neighborhood)
+      ),
+    [poles, cityFilter, districtFilter]
+  )
+
+  useEffect(() => {
+    if (districtFilter && !districtOptions.includes(districtFilter)) {
+      setDistrictFilter('')
+    }
+  }, [districtFilter, districtOptions])
+
+  useEffect(() => {
+    if (neighborhoodFilter && !neighborhoodOptions.includes(neighborhoodFilter)) {
+      setNeighborhoodFilter('')
+    }
+  }, [neighborhoodFilter, neighborhoodOptions])
+
+  const locationFilteredPoles = poles.filter((pole) => {
+    const cityValue = normalizeValue(pole.city)
+    const districtValue = normalizeValue(pole.district)
+    const neighborhoodValue = normalizeValue(pole.neighborhood)
+    const matchesCity = cityFilter === '' || cityValue === cityFilter
+    const matchesDistrict = districtFilter === '' || districtValue === districtFilter
+    const matchesNeighborhood = neighborhoodFilter === '' || neighborhoodValue === neighborhoodFilter
+    return matchesCity && matchesDistrict && matchesNeighborhood
+  })
+
+  const filteredPoles = locationFilteredPoles.filter((pole) => {
+    const districtText = pole.district || ''
+    const neighborhoodText = pole.neighborhood || ''
+    const streetText = pole.street || ''
+    const poleType = getPoleType(pole)
     const matchesSearch =
       searchText === '' ||
       pole.pole_code.toLowerCase().includes(searchText.toLowerCase()) ||
-      pole.district.toLowerCase().includes(searchText.toLowerCase())
+      districtText.toLowerCase().includes(searchText.toLowerCase()) ||
+      neighborhoodText.toLowerCase().includes(searchText.toLowerCase()) ||
+      streetText.toLowerCase().includes(searchText.toLowerCase())
     const matchesStatus = statusFilter === '' || pole.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchesPoleType = poleTypeFilter === '' || poleType === poleTypeFilter
+    return matchesSearch && matchesStatus && matchesPoleType
   })
+
+  const neighborhoodGroups = Object.entries(
+    filteredPoles.reduce((acc, pole) => {
+      const key = (pole.neighborhood || 'Bilinmeyen Mahalle').trim() || 'Bilinmeyen Mahalle'
+      if (!acc[key]) acc[key] = []
+      acc[key].push(pole)
+      return acc
+    }, {})
+  )
+    .map(([neighborhood, polesInGroup]) => ({ neighborhood, poles: polesInGroup }))
+    .sort((a, b) => a.neighborhood.localeCompare(b.neighborhood, 'tr'))
+
+  const hasAreaFilter = cityFilter !== '' || districtFilter !== '' || neighborhoodFilter !== ''
+
+  useEffect(() => {
+    if (!selectedPoleId) return
+    const selectedStillVisible = filteredPoles.some((pole) => pole.id === selectedPoleId)
+    if (!selectedStillVisible) {
+      setSelectedPoleId(null)
+      if (viewMode === 'detail') {
+        setViewMode('list')
+      }
+    }
+  }, [filteredPoles, selectedPoleId, viewMode])
 
   const createOrderMutation = useMutation({
     mutationFn: orderApi.createOrder,
@@ -214,7 +315,16 @@ function PolesPage() {
     setIsEditing(false)
     setSelectedPoleId(null)
     setSelectedPoleIds([])
-    setNewPole((prev) => ({ ...prev, latitude: '', longitude: '' }))
+    setNewPole({
+      latitude: '',
+      longitude: '',
+      city: 'Tokat',
+      district: '',
+      neighborhood: '',
+      street: '',
+      poleType: 'NORMAL',
+      sequenceNo: 1,
+    })
   }
 
   const selectPole = (pole) => {
@@ -239,6 +349,21 @@ function PolesPage() {
     setViewMode('list')
     setIsCreating(false)
     setIsEditing(false)
+  }
+
+  const toggleNeighborhoodSelection = (neighborhood) => {
+    if (!isMultiSelectMode) return
+    const groupIds = filteredPoles
+      .filter((pole) => ((pole.neighborhood || 'Bilinmeyen Mahalle').trim() || 'Bilinmeyen Mahalle') === neighborhood)
+      .map((pole) => pole.id)
+
+    setSelectedPoleIds((prev) => {
+      const allSelected = groupIds.every((id) => prev.includes(id))
+      if (allSelected) {
+        return prev.filter((id) => !groupIds.includes(id))
+      }
+      return Array.from(new Set([...prev, ...groupIds]))
+    })
   }
 
   const handleBulkOrder = () => {
@@ -290,6 +415,7 @@ function PolesPage() {
     district: form.district,
     neighborhood: form.neighborhood,
     street: form.street,
+    poleType: form.poleType || form.pole_type || 'NORMAL',
     status: form.status,
   })
 
@@ -306,6 +432,16 @@ function PolesPage() {
     available: filteredPoles.filter((pole) => pole.status === 'AVAILABLE').length,
     occupied: filteredPoles.filter((pole) => pole.status === 'OCCUPIED').length,
   }
+
+  const handleMapAreaSelect = useCallback((areaPoleIds) => {
+    setSelectedPoleIds((prev) => Array.from(new Set([...prev, ...areaPoleIds])))
+  }, [])
+
+  const openStreetView = useCallback((event, pole) => {
+    event.stopPropagation()
+    event.preventDefault()
+    setStreetViewPole(pole)
+  }, [])
 
   return (
     <div className="h-[calc(100vh-140px)] min-h-[680px]">
@@ -365,6 +501,66 @@ function PolesPage() {
                     className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 outline-none focus:border-indigo-400"
                   />
                 </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <select
+                    value={cityFilter}
+                    onChange={(event) => {
+                      const nextCity = event.target.value
+                      setCityFilter(nextCity)
+                      setDistrictFilter('')
+                      setNeighborhoodFilter('')
+                    }}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                  >
+                    <option value="">Tum Sehirler</option>
+                    {cityOptions.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={districtFilter}
+                    onChange={(event) => {
+                      const nextDistrict = event.target.value
+                      setDistrictFilter(nextDistrict)
+                      setNeighborhoodFilter('')
+                    }}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                  >
+                    <option value="">Tum Ilceler</option>
+                    {districtOptions.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={neighborhoodFilter}
+                    onChange={(event) => setNeighborhoodFilter(event.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                  >
+                    <option value="">Tum Mahalleler</option>
+                    {neighborhoodOptions.map((neighborhood) => (
+                      <option key={neighborhood} value={neighborhood}>
+                        {neighborhood}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {hasAreaFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCityFilter('')
+                      setDistrictFilter('')
+                      setNeighborhoodFilter('')
+                    }}
+                    className="inline-flex w-fit items-center rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                  >
+                    Alan Filtresini Temizle
+                  </button>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {statusFilters.map((filter) => {
                     const isActive = statusFilter === filter.value
@@ -390,6 +586,25 @@ function PolesPage() {
                     )
                   })}
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  {poleTypeFilters.map((filter) => {
+                    const isActive = poleTypeFilter === filter.value
+                    return (
+                      <button
+                        key={filter.label}
+                        type="button"
+                        onClick={() => setPoleTypeFilter(filter.value)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                          isActive
+                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -410,35 +625,91 @@ function PolesPage() {
                     </div>
                   )}
 
-                  {filteredPoles.map((pole) => {
-                    const isActive = selectedPoleIds.includes(pole.id)
+                  {neighborhoodGroups.map((group) => {
+                    const selectedCount = group.poles.filter((pole) => selectedPoleIds.includes(pole.id)).length
+                    const allSelected = selectedCount > 0 && selectedCount === group.poles.length
                     return (
-                      <button
-                        key={pole.id}
-                        type="button"
-                        onClick={() => selectPole(pole)}
-                        className={`w-full rounded-xl border p-4 text-left transition ${
-                          isActive
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
+                      <div key={group.neighborhood} className="space-y-2">
+                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                           <div>
-                            <p className="text-lg font-bold text-slate-900">{pole.pole_code}</p>
-                            <p className="mt-1 text-xs text-slate-500">{pole.district}</p>
+                            <p className="text-xs font-bold uppercase tracking-wide text-slate-700">{group.neighborhood}</p>
+                            <p className="text-[11px] text-slate-500">{group.poles.length} direk</p>
                           </div>
-                          <span
-                            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
-                              pole.status === 'AVAILABLE'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-rose-100 text-rose-700'
-                            }`}
-                          >
-                            {toReadableStatus(pole.status)}
-                          </span>
+                          {isMultiSelectMode && (
+                            <button
+                              type="button"
+                              onClick={() => toggleNeighborhoodSelection(group.neighborhood)}
+                              className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                                allSelected
+                                  ? 'bg-slate-900 text-white'
+                                  : 'bg-white text-slate-700 border border-slate-200'
+                              }`}
+                            >
+                              {allSelected ? 'Secimi Kaldir' : 'Tumunu Sec'}
+                            </button>
+                          )}
                         </div>
-                      </button>
+
+                        {group.poles.map((pole) => {
+                          const isActive = selectedPoleIds.includes(pole.id)
+                          const poleType = getPoleType(pole)
+                          return (
+                            <div
+                              key={pole.id}
+                              onClick={() => selectPole(pole)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault()
+                                  selectPole(pole)
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              className={`w-full rounded-xl border p-4 text-left transition ${
+                                isActive
+                                  ? 'border-indigo-500 bg-indigo-50'
+                                  : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-lg font-bold text-slate-900">{pole.pole_code}</p>
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {pole.district || '-'} • {pole.street || '-'}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <span
+                                    className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                                      pole.status === 'AVAILABLE'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-rose-100 text-rose-700'
+                                    }`}
+                                  >
+                                    {toReadableStatus(pole.status)}
+                                  </span>
+                                  <span
+                                    className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                                      poleType === 'AYDINLATMALI'
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-slate-100 text-slate-700'
+                                    }`}
+                                  >
+                                    {toReadablePoleType(poleType)}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => openStreetView(event, pole)}
+                                    className="mt-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                                  >
+                                    Sokak Gorunumu
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     )
                   })}
                 </div>
@@ -460,15 +731,26 @@ function PolesPage() {
                     <p className="mt-1 text-xs text-slate-600">
                       {selectedPole.city} / {selectedPole.district}
                     </p>
-                    <span
-                      className={`mt-3 inline-flex rounded-md px-2 py-1 text-[11px] font-semibold ${
-                        selectedPole.status === 'AVAILABLE'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {toReadableStatus(selectedPole.status)}
-                    </span>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span
+                        className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold ${
+                          selectedPole.status === 'AVAILABLE'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
+                        {toReadableStatus(selectedPole.status)}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold ${
+                          getPoleType(selectedPole) === 'AYDINLATMALI'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {toReadablePoleType(getPoleType(selectedPole))}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -523,9 +805,17 @@ function PolesPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
+                      onClick={(event) => openStreetView(event, selectedPole)}
+                      className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                    >
+                      Sokak Gorunumu
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setEditFormData({
                           ...selectedPole,
+                          poleType: getPoleType(selectedPole),
                           sequenceNo: selectedPole.sequenceNo ?? selectedPole.sequence_no ?? 1,
                         })
                         setViewMode('form')
@@ -596,6 +886,23 @@ function PolesPage() {
                     </div>
 
                     <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-500">Mahalle</label>
+                      <input
+                        type="text"
+                        value={(isEditing ? editFormData?.neighborhood : newPole.neighborhood) || ''}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          if (isEditing) {
+                            setEditFormData((prev) => ({ ...prev, neighborhood: value }))
+                            return
+                          }
+                          setNewPole((prev) => ({ ...prev, neighborhood: value }))
+                        }}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                      />
+                    </div>
+
+                    <div>
                       <label className="mb-1 block text-xs font-semibold text-slate-500">Cadde / Sokak</label>
                       <input
                         type="text"
@@ -610,6 +917,25 @@ function PolesPage() {
                         }}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
                       />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-500">Direk Tipi</label>
+                      <select
+                        value={(isEditing ? editFormData?.poleType : newPole.poleType) || 'NORMAL'}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          if (isEditing) {
+                            setEditFormData((prev) => ({ ...prev, poleType: value, pole_type: value }))
+                            return
+                          }
+                          setNewPole((prev) => ({ ...prev, poleType: value }))
+                        }}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+                      >
+                        <option value="NORMAL">Normal</option>
+                        <option value="AYDINLATMALI">Aydinlatmali</option>
+                      </select>
                     </div>
 
                     <div>
@@ -678,11 +1004,19 @@ function PolesPage() {
             onMapClick={isCreating || isEditing ? handleMapClick : null}
             selectedPoleId={selectedPoleId}
             selectedPoleIds={selectedPoleIds}
+            highlightPoles={hasAreaFilter ? locationFilteredPoles : []}
+            multiSelectEnabled={isMultiSelectMode && !isCreating && !isEditing}
+            onAreaSelect={handleMapAreaSelect}
           />
 
           {(isCreating || isEditing) && (
             <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-indigo-200 bg-indigo-50/95 px-3 py-2 text-xs font-semibold text-indigo-700">
               Haritaya tiklayarak konum secimi yapin.
+            </div>
+          )}
+          {isMultiSelectMode && !isCreating && !isEditing && (
+            <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-blue-200 bg-blue-50/95 px-3 py-2 text-xs font-semibold text-blue-700">
+              Shift + sol tik ile surukleyerek alan secin.
             </div>
           )}
         </section>
@@ -720,6 +1054,13 @@ function PolesPage() {
       <ConfirmModal
         {...confirmConfig}
         onClose={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <StreetViewModal
+        isOpen={Boolean(streetViewPole)}
+        onClose={() => setStreetViewPole(null)}
+        pole={streetViewPole}
+        apiKey={streetViewApiKey}
       />
     </div>
   )

@@ -82,8 +82,9 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_poles_deleted_at ON poles(deleted_at)`,
 
   // Temporary mobile capture area for field teams.
+  // Use TEXT ids for compatibility with legacy databases that may use TEXT PKs.
   `CREATE TABLE IF NOT EXISTS pole_capture_staging (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       latitude DOUBLE PRECISION NOT NULL,
       longitude DOUBLE PRECISION NOT NULL,
       city VARCHAR(80) NOT NULL DEFAULT 'Tokat',
@@ -96,14 +97,34 @@ const STATEMENTS = [
       generated_code VARCHAR(255) NOT NULL,
       source VARCHAR(16) NOT NULL DEFAULT 'MAP_TAP',
       gps_accuracy_m DOUBLE PRECISION,
-      captured_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      captured_by TEXT,
       notes TEXT,
       captured_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      imported_pole_id UUID REFERENCES poles(id) ON DELETE SET NULL,
+      imported_pole_id TEXT,
       imported_at TIMESTAMP WITH TIME ZONE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )`,
+  `ALTER TABLE pole_capture_staging ALTER COLUMN id SET DEFAULT gen_random_uuid()::text`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS city VARCHAR(80) NOT NULL DEFAULT 'Tokat'`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS district VARCHAR(120)`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS neighborhood VARCHAR(160)`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS street VARCHAR(200)`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS direction_type VARCHAR(16) NOT NULL DEFAULT 'TEK_YONLU'`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS arm_type VARCHAR(2) NOT NULL DEFAULT 'T'`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS lighting_type VARCHAR(16) NOT NULL DEFAULT 'NORMAL'`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS generated_code VARCHAR(255)`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS source VARCHAR(16) NOT NULL DEFAULT 'MAP_TAP'`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS gps_accuracy_m DOUBLE PRECISION`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS captured_by TEXT`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS notes TEXT`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS captured_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS imported_pole_id TEXT`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS imported_at TIMESTAMP WITH TIME ZONE`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP`,
+  `ALTER TABLE pole_capture_staging ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_pole_capture_staging_generated_code_unique
     ON pole_capture_staging(generated_code)`,
   `CREATE INDEX IF NOT EXISTS idx_pole_capture_staging_captured_at

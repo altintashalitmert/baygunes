@@ -188,7 +188,7 @@ export const listPoleCaptures = async (req, res, next) => {
           pcs.*,
           u.name AS captured_by_name
         FROM pole_capture_staging pcs
-        LEFT JOIN users u ON u.id = pcs.captured_by
+        LEFT JOIN users u ON u.id::text = pcs.captured_by::text
         ${where}
         ORDER BY pcs.captured_at DESC
         LIMIT $${paramCount}
@@ -370,7 +370,7 @@ export const importPoleCaptures = async (req, res, next) => {
       `
         SELECT *
         FROM pole_capture_staging
-        WHERE id = ANY($1::uuid[])
+        WHERE id::text = ANY($1::text[])
           AND imported_at IS NULL
         FOR UPDATE
       `,
@@ -453,22 +453,42 @@ export const importPoleCaptures = async (req, res, next) => {
       });
     }
 
-    await client.query(
-      `
-        UPDATE pole_capture_staging
-        SET
-          imported_at = NOW(),
-          imported_pole_id = mapped.pole_id::uuid,
-          updated_at = NOW()
-        FROM (
-          SELECT
-            UNNEST($1::uuid[]) AS capture_id,
-            UNNEST($2::uuid[]) AS pole_id
-        ) AS mapped
-        WHERE pole_capture_staging.id = mapped.capture_id
-      `,
-      [importRows.map((x) => x.captureId), importRows.map((x) => x.poleId)]
-    );
+    try {
+      await client.query(
+        `
+          UPDATE pole_capture_staging
+          SET
+            imported_at = NOW(),
+            imported_pole_id = mapped.pole_id,
+            updated_at = NOW()
+          FROM (
+            SELECT
+              UNNEST($1::text[]) AS capture_id,
+              UNNEST($2::text[]) AS pole_id
+          ) AS mapped
+          WHERE pole_capture_staging.id::text = mapped.capture_id
+        `,
+        [importRows.map((x) => String(x.captureId)), importRows.map((x) => String(x.poleId))]
+      );
+    } catch (error) {
+      if (error?.code !== '42804') throw error;
+      await client.query(
+        `
+          UPDATE pole_capture_staging
+          SET
+            imported_at = NOW(),
+            imported_pole_id = mapped.pole_id::uuid,
+            updated_at = NOW()
+          FROM (
+            SELECT
+              UNNEST($1::text[]) AS capture_id,
+              UNNEST($2::text[]) AS pole_id
+          ) AS mapped
+          WHERE pole_capture_staging.id::text = mapped.capture_id
+        `,
+        [importRows.map((x) => String(x.captureId)), importRows.map((x) => String(x.poleId))]
+      );
+    }
 
     await client.query('COMMIT');
 

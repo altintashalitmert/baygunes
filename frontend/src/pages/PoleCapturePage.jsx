@@ -117,6 +117,7 @@ function PoleCapturePage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [isStagingOpen, setIsStagingOpen] = useState(false)
   const [stagingPage, setStagingPage] = useState(1)
+  const [isImportAllPending, setIsImportAllPending] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
   const [captureSource, setCaptureSource] = useState('MAP_TAP')
   const [gpsAccuracyM, setGpsAccuracyM] = useState(null)
@@ -164,6 +165,12 @@ function PoleCapturePage() {
     () => buildVisiblePages(currentPage, totalPages),
     [currentPage, totalPages]
   )
+  const captureIds = useMemo(
+    () => captures.map((capture) => String(capture?.id || '')).filter(Boolean),
+    [captures]
+  )
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
+  const areAllVisibleSelected = captureIds.length > 0 && captureIds.every((id) => selectedSet.has(id))
 
   useEffect(() => {
     setSelectedIds([])
@@ -219,6 +226,7 @@ function PoleCapturePage() {
       alert(error?.response?.data?.error || error.message || 'Silme islemi basarisiz.')
     },
   })
+  const isBulkActionPending = importMutation.isPending || deleteMutation.isPending || isImportAllPending
 
   const reverseGeocodeMutation = useMutation({
     mutationFn: poleApi.reverseGeocode,
@@ -334,6 +342,67 @@ function PoleCapturePage() {
     )
     if (!confirmed) return
     deleteMutation.mutate(uniqueIds)
+  }
+
+  const handleToggleSelectAll = () => {
+    if (captureIds.length === 0) return
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (captureIds.every((id) => next.has(id))) {
+        captureIds.forEach((id) => next.delete(id))
+      } else {
+        captureIds.forEach((id) => next.add(id))
+      }
+      return Array.from(next)
+    })
+  }
+
+  const getAllPendingCaptureIds = async () => {
+    const allIds = []
+    const pageSize = 200
+    let page = 1
+    let total = 1
+
+    while (page <= total) {
+      const response = await poleApi.getStaging({ imported: 'false', page, pageSize })
+      const data = response?.data?.data || {}
+      const rows = Array.isArray(data.captures) ? data.captures : []
+      rows.forEach((item) => {
+        const id = String(item?.id || '').trim()
+        if (id) allIds.push(id)
+      })
+      total = Math.max(Number(data.totalPages) || 1, 1)
+      page += 1
+    }
+
+    return [...new Set(allIds)]
+  }
+
+  const handleImportAllCaptures = async () => {
+    if (!canImport || isBulkActionPending) return
+
+    setIsImportAllPending(true)
+    try {
+      const allIds = await getAllPendingCaptureIds()
+      if (allIds.length === 0) {
+        alert('Import edilecek bekleyen kayit yok.')
+        return
+      }
+      let isImportSuccess = false
+      try {
+        await importMutation.mutateAsync(allIds)
+        isImportSuccess = true
+      } catch {
+        // Hata mesaji importMutation.onError icinde veriliyor.
+      }
+      if (isImportSuccess) {
+        setStagingPage(1)
+      }
+    } catch (error) {
+      alert(error?.response?.data?.error || error?.message || 'Tum kayitlar import edilemedi.')
+    } finally {
+      setIsImportAllPending(false)
+    }
   }
 
   return (
@@ -601,7 +670,33 @@ function PoleCapturePage() {
                 {canImport && (
                   <button
                     type="button"
-                    disabled={selectedIds.length === 0 || importMutation.isPending || deleteMutation.isPending}
+                    disabled={captures.length === 0 || isBulkActionPending}
+                    onClick={handleImportAllCaptures}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    {isImportAllPending ? 'Tum kayitlar import ediliyor...' : 'Tumunu Import Et'}
+                  </button>
+                )}
+                {canImport && (
+                  <button
+                    type="button"
+                    disabled={captures.length === 0 || isBulkActionPending}
+                    onClick={handleToggleSelectAll}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {areAllVisibleSelected ? 'Secimi Temizle' : 'Tumunu Sec'}
+                  </button>
+                )}
+                {canImport && selectedIds.length > 0 && (
+                  <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                    Secili: {selectedIds.length}
+                  </span>
+                )}
+                {canImport && (
+                  <button
+                    type="button"
+                    disabled={selectedIds.length === 0 || isBulkActionPending}
                     onClick={() => importMutation.mutate(selectedIds)}
                     className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -612,7 +707,7 @@ function PoleCapturePage() {
                 {canDelete && (
                   <button
                     type="button"
-                    disabled={selectedIds.length === 0 || deleteMutation.isPending || importMutation.isPending}
+                    disabled={selectedIds.length === 0 || isBulkActionPending}
                     onClick={() => handleDeleteCaptures(selectedIds)}
                     className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -659,6 +754,7 @@ function PoleCapturePage() {
                                 isChecked ? [...prev, capture.id] : prev.filter((id) => id !== capture.id)
                               )
                             }}
+                            disabled={isBulkActionPending}
                             className="mt-0.5 rounded border-slate-300"
                           />
                         )}
@@ -686,7 +782,7 @@ function PoleCapturePage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteCaptures([capture.id])}
-                            disabled={deleteMutation.isPending || importMutation.isPending}
+                            disabled={isBulkActionPending}
                             className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />

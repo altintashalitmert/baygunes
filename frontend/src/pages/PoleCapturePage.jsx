@@ -27,6 +27,7 @@ const TOKAT_BOUNDS = [
   [40.12, 36.25],
   [40.58, 36.86],
 ]
+const STAGING_PAGE_SIZE = 25
 
 const directionOptions = [
   { value: 'TEK_YONLU', label: 'Tek yonlu' },
@@ -89,6 +90,25 @@ const getAccuracyLabel = (accuracyM) => {
   return `Dusuk (${accuracyM.toFixed(1)}m)`
 }
 
+const buildVisiblePages = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pages = [1]
+  const start = Math.max(2, currentPage - 1)
+  const end = Math.min(totalPages - 1, currentPage + 1)
+
+  if (start > 2) pages.push('dots-left')
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page)
+  }
+  if (end < totalPages - 1) pages.push('dots-right')
+  pages.push(totalPages)
+
+  return pages
+}
+
 function PoleCapturePage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
@@ -96,6 +116,7 @@ function PoleCapturePage() {
 
   const [selectedIds, setSelectedIds] = useState([])
   const [isStagingOpen, setIsStagingOpen] = useState(false)
+  const [stagingPage, setStagingPage] = useState(1)
   const [isLocating, setIsLocating] = useState(false)
   const [captureSource, setCaptureSource] = useState('MAP_TAP')
   const [gpsAccuracyM, setGpsAccuracyM] = useState(null)
@@ -129,11 +150,24 @@ function PoleCapturePage() {
   }, [selectedPoint])
 
   const { data: capturesData, isLoading } = useQuery({
-    queryKey: ['poleCaptureStaging', 'pending'],
-    queryFn: () => poleApi.getStaging({ imported: 'false', limit: 80 }),
+    queryKey: ['poleCaptureStaging', 'pending', stagingPage],
+    queryFn: () =>
+      poleApi.getStaging({ imported: 'false', page: stagingPage, pageSize: STAGING_PAGE_SIZE }),
   })
 
-  const captures = capturesData?.data?.data?.captures || []
+  const stagingData = capturesData?.data?.data || {}
+  const captures = stagingData?.captures || []
+  const totalCount = stagingData?.totalCount ?? captures.length
+  const totalPages = Math.max(stagingData?.totalPages || 1, 1)
+  const currentPage = stagingData?.page || stagingPage
+  const visiblePages = useMemo(
+    () => buildVisiblePages(currentPage, totalPages),
+    [currentPage, totalPages]
+  )
+
+  useEffect(() => {
+    setSelectedIds([])
+  }, [stagingPage])
 
   const createCaptureMutation = useMutation({
     mutationFn: poleApi.createStaging,
@@ -156,6 +190,9 @@ function PoleCapturePage() {
     mutationFn: (ids) => poleApi.importStaging(ids),
     onSuccess: (response) => {
       const importedCount = response?.data?.data?.importedCount || 0
+      if (importedCount > 0 && captures.length === importedCount && stagingPage > 1) {
+        setStagingPage((prev) => Math.max(prev - 1, 1))
+      }
       queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
       queryClient.invalidateQueries({ queryKey: ['poles'] })
       setSelectedIds([])
@@ -171,6 +208,9 @@ function PoleCapturePage() {
     onSuccess: (response) => {
       const deletedCount = response?.data?.data?.deletedCount || 0
       const deletedIds = response?.data?.data?.deletedIds || []
+      if (deletedCount > 0 && captures.length === deletedCount && stagingPage > 1) {
+        setStagingPage((prev) => Math.max(prev - 1, 1))
+      }
       queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
       setSelectedIds((prev) => prev.filter((id) => !deletedIds.includes(id)))
       alert(`${deletedCount} staging kaydi silindi.`)
@@ -314,7 +354,7 @@ function PoleCapturePage() {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
               >
                 <UploadCloud className="h-4 w-4" />
-                Staging ({captures.length})
+                Staging ({totalCount})
               </button>
             </div>
 
@@ -555,7 +595,7 @@ function PoleCapturePage() {
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <h2 className="text-sm font-bold text-slate-900">
-                Bekleyen staging kayitlari ({captures.length})
+                Bekleyen staging kayitlari ({totalCount})
               </h2>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {canImport && (
@@ -657,6 +697,51 @@ function PoleCapturePage() {
                     </div>
                   )
                 })}
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                <p className="text-[11px] text-slate-500">
+                  Sayfa {currentPage}/{totalPages} · Toplam {totalCount} kayit
+                </p>
+                <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setStagingPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage <= 1 || isLoading}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Onceki
+                  </button>
+                  {visiblePages.map((pageItem) =>
+                    typeof pageItem === 'number' ? (
+                      <button
+                        key={`staging-page-${pageItem}`}
+                        type="button"
+                        onClick={() => setStagingPage(pageItem)}
+                        disabled={isLoading}
+                        className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
+                          pageItem === currentPage
+                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {pageItem}
+                      </button>
+                    ) : (
+                      <span key={`staging-page-${pageItem}`} className="px-1 text-xs text-slate-400">
+                        ...
+                      </span>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStagingPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage >= totalPages || isLoading}
+                    className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Sonraki
+                  </button>
+                </div>
               </div>
             </div>
           </div>

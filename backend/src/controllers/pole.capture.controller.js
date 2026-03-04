@@ -165,8 +165,11 @@ const validateCoordinates = ({ latitude, longitude, allowOutsideTokat }) => {
 
 export const listPoleCaptures = async (req, res, next) => {
   try {
-    const { district, neighborhood, imported, limit = 200 } = req.query;
-    const maxLimit = Math.min(Math.max(Number(limit) || 200, 1), 1000);
+    const { district, neighborhood, imported, limit, pageSize, page } = req.query;
+    const requestedPageSize = Number(pageSize ?? limit ?? 80);
+    const normalizedPageSize = Math.min(Math.max(requestedPageSize || 80, 1), 200);
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const offset = (normalizedPage - 1) * normalizedPageSize;
 
     const params = [];
     let paramCount = 1;
@@ -186,7 +189,22 @@ export const listPoleCaptures = async (req, res, next) => {
       where += ' AND pcs.imported_at IS NULL';
     }
 
-    params.push(maxLimit);
+    const countResult = await pool.query(
+      `
+        SELECT COUNT(*)::int AS total_count
+        FROM pole_capture_staging pcs
+        ${where}
+      `,
+      params
+    );
+    const totalCount = countResult.rows[0]?.total_count || 0;
+
+    const pagedParams = [...params];
+    const limitParam = `$${pagedParams.length + 1}`;
+    pagedParams.push(normalizedPageSize);
+    const offsetParam = `$${pagedParams.length + 1}`;
+    pagedParams.push(offset);
+
     const result = await pool.query(
       `
         SELECT
@@ -196,16 +214,24 @@ export const listPoleCaptures = async (req, res, next) => {
         LEFT JOIN users u ON u.id::text = pcs.captured_by::text
         ${where}
         ORDER BY pcs.captured_at DESC
-        LIMIT $${paramCount}
+        LIMIT ${limitParam}
+        OFFSET ${offsetParam}
       `,
-      params
+      pagedParams
     );
+    const totalPages = Math.max(Math.ceil(totalCount / normalizedPageSize), 1);
 
     res.json({
       success: true,
       data: {
         captures: result.rows,
         count: result.rows.length,
+        totalCount,
+        page: normalizedPage,
+        pageSize: normalizedPageSize,
+        totalPages,
+        hasNextPage: normalizedPage < totalPages,
+        hasPrevPage: normalizedPage > 1,
       },
     });
   } catch (error) {

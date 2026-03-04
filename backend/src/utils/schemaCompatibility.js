@@ -48,7 +48,100 @@ const STATEMENTS = [
 
   // Soft-delete support used by poles/report endpoints.
   `ALTER TABLE poles ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE`,
+  `ALTER TABLE poles ADD COLUMN IF NOT EXISTS pole_type VARCHAR(32) NOT NULL DEFAULT 'NORMAL'`,
+  `ALTER TABLE poles ADD COLUMN IF NOT EXISTS direction_type VARCHAR(16) NOT NULL DEFAULT 'TEK_YONLU'`,
+  `ALTER TABLE poles ADD COLUMN IF NOT EXISTS arm_type VARCHAR(2) NOT NULL DEFAULT 'T'`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_poles_direction_type'
+      ) THEN
+        ALTER TABLE poles
+        ADD CONSTRAINT chk_poles_direction_type
+        CHECK (direction_type IN ('TEK_YONLU', 'CIFT_YONLU'));
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_poles_arm_type'
+      ) THEN
+        ALTER TABLE poles
+        ADD CONSTRAINT chk_poles_arm_type
+        CHECK (arm_type IN ('L', 'T'));
+      END IF;
+    END $$`,
+  `CREATE INDEX IF NOT EXISTS idx_poles_neighborhood ON poles(neighborhood)`,
+  `CREATE INDEX IF NOT EXISTS idx_poles_type ON poles(pole_type)`,
+  `CREATE INDEX IF NOT EXISTS idx_poles_direction_type ON poles(direction_type)`,
+  `CREATE INDEX IF NOT EXISTS idx_poles_arm_type ON poles(arm_type)`,
   `CREATE INDEX IF NOT EXISTS idx_poles_deleted_at ON poles(deleted_at)`,
+
+  // Temporary mobile capture area for field teams.
+  `CREATE TABLE IF NOT EXISTS pole_capture_staging (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      latitude DOUBLE PRECISION NOT NULL,
+      longitude DOUBLE PRECISION NOT NULL,
+      city VARCHAR(80) NOT NULL DEFAULT 'Tokat',
+      district VARCHAR(120) NOT NULL,
+      neighborhood VARCHAR(160) NOT NULL,
+      street VARCHAR(200) NOT NULL,
+      direction_type VARCHAR(16) NOT NULL DEFAULT 'TEK_YONLU',
+      arm_type VARCHAR(2) NOT NULL DEFAULT 'T',
+      lighting_type VARCHAR(16) NOT NULL DEFAULT 'NORMAL',
+      generated_code VARCHAR(255) NOT NULL,
+      source VARCHAR(16) NOT NULL DEFAULT 'MAP_TAP',
+      gps_accuracy_m DOUBLE PRECISION,
+      captured_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      notes TEXT,
+      captured_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      imported_pole_id UUID REFERENCES poles(id) ON DELETE SET NULL,
+      imported_at TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_pole_capture_staging_generated_code_unique
+    ON pole_capture_staging(generated_code)`,
+  `CREATE INDEX IF NOT EXISTS idx_pole_capture_staging_captured_at
+    ON pole_capture_staging(captured_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_pole_capture_staging_imported_at
+    ON pole_capture_staging(imported_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_pole_capture_staging_neighborhood
+    ON pole_capture_staging(neighborhood)`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_capture_direction_type'
+      ) THEN
+        ALTER TABLE pole_capture_staging
+        ADD CONSTRAINT chk_capture_direction_type
+        CHECK (direction_type IN ('TEK_YONLU', 'CIFT_YONLU'));
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_capture_arm_type'
+      ) THEN
+        ALTER TABLE pole_capture_staging
+        ADD CONSTRAINT chk_capture_arm_type
+        CHECK (arm_type IN ('L', 'T'));
+      END IF;
+    END $$`,
+  `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_capture_lighting_type'
+      ) THEN
+        ALTER TABLE pole_capture_staging
+        ADD CONSTRAINT chk_capture_lighting_type
+        CHECK (lighting_type IN ('NORMAL', 'AYDINLATMALI'));
+      END IF;
+    END $$`,
 
   // Notification preferences query depends on this column.
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT TRUE`,
@@ -70,6 +163,15 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email)`,
   `CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip_address)`,
   `CREATE INDEX IF NOT EXISTS idx_login_attempts_created ON login_attempts(created_at)`,
+  `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'login_attempts' AND column_name = 'id'
+      ) THEN
+        EXECUTE 'ALTER TABLE login_attempts ALTER COLUMN id SET DEFAULT gen_random_uuid()';
+      END IF;
+    END $$`,
   `CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

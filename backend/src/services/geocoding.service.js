@@ -19,11 +19,50 @@ export const reverseGeocode = async (latitude, longitude) => {
     
     const { address } = response.data;
     
+    const city =
+      address.city ||
+      address.town ||
+      address.municipality ||
+      address.province ||
+      address.state_district ||
+      '';
+    const district =
+      address.district ||
+      address.county ||
+      address.city_district ||
+      address.town ||
+      address.municipality ||
+      '';
+    const neighborhood =
+      address.suburb ||
+      address.neighbourhood ||
+      address.quarter ||
+      address.village ||
+      '';
+    const streetRaw =
+      address.road ||
+      address.street ||
+      address.pedestrian ||
+      address.footway ||
+      address.path ||
+      address.residential ||
+      address.highway ||
+      '';
+
+    // Avoid writing generic location names to street field.
+    const normalizedStreet = String(streetRaw).trim();
+    const ignoreStreet =
+      !normalizedStreet ||
+      normalizedStreet.length < 3 ||
+      normalizedStreet === city ||
+      normalizedStreet === district ||
+      normalizedStreet === neighborhood;
+
     return {
-      city: address.city || address.town || address.province || '',
-      district: address.district || address.county || '',
-      neighborhood: address.suburb || address.neighbourhood || '',
-      street: address.road || address.street || '',
+      city,
+      district,
+      neighborhood,
+      street: ignoreStreet ? '' : normalizedStreet,
       fullAddress: response.data.display_name
     };
   } catch (error) {

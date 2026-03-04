@@ -8,7 +8,14 @@ import {
   restorePole,
   getAvailablePoles,
   checkAvailability,
+  reverseGeocodePoleLocation,
 } from '../controllers/pole.controller.js';
+import {
+  createPoleCapture,
+  getPoleCaptureGroups,
+  importPoleCaptures,
+  listPoleCaptures,
+} from '../controllers/pole.capture.controller.js';
 import { bulkUpdatePoles, bulkDeletePoles } from '../controllers/pole.bulk.controller.js';
 import { authMiddleware, roleMiddleware } from '../middleware/auth.middleware.js';
 
@@ -29,6 +36,19 @@ router.post('/check-availability', checkAvailability);
 
 // GET /api/poles - List all poles
 router.get('/', getPoles);
+
+// POST /api/poles/reverse-geocode
+router.post(
+  '/reverse-geocode',
+  roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']),
+  reverseGeocodePoleLocation
+);
+
+// Temporary mobile capture endpoints
+router.get('/staging', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), listPoleCaptures);
+router.get('/staging/groups', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), getPoleCaptureGroups);
+router.post('/staging', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), createPoleCapture);
+router.post('/staging/import', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), importPoleCaptures);
 
 // GET /api/poles/:id - Get pole by ID
 router.get('/:id', getPoleById);

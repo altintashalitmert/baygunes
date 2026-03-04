@@ -27,6 +27,22 @@ export const poleApi = {
 
   // POST /api/poles/bulk-delete
   bulkDelete: (poleIds) => api.post('/poles/bulk-delete', { poleIds }),
+
+  // GET /api/poles/staging
+  getStaging: (params) => api.get('/poles/staging', { params }),
+
+  // GET /api/poles/staging/groups
+  getStagingGroups: (params) => api.get('/poles/staging/groups', { params }),
+
+  // POST /api/poles/staging
+  createStaging: (data) => api.post('/poles/staging', data),
+
+  // POST /api/poles/reverse-geocode
+  reverseGeocode: (data) => api.post('/poles/reverse-geocode', data),
+
+  // POST /api/poles/staging/import
+  importStaging: (ids) => api.post('/poles/staging/import', { ids }),
+
   // POST /api/orders
   createOrder: (data) => api.post('/orders', data),
 }

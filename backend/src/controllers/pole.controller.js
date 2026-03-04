@@ -2,10 +2,92 @@ import pool from '../utils/prisma.js';
 import { reverseGeocode, generatePoleCode as generatePoleCodeFromLocation } from '../services/geocoding.service.js';
 import { randomUUID } from 'crypto';
 
+const ALLOWED_POLE_TYPES = new Set(['NORMAL', 'AYDINLATMALI']);
+const ALLOWED_DIRECTION_TYPES = new Set(['TEK_YONLU', 'CIFT_YONLU']);
+const ALLOWED_ARM_TYPES = new Set(['L', 'T']);
+
+const normalizePoleType = (value) => {
+  if (!value) return 'NORMAL';
+  const normalized = String(value).trim().toUpperCase();
+  return ALLOWED_POLE_TYPES.has(normalized) ? normalized : 'NORMAL';
+};
+
+const normalizeDirectionType = (value) => {
+  if (!value) return 'TEK_YONLU';
+  const normalized = String(value).trim().toUpperCase();
+  return ALLOWED_DIRECTION_TYPES.has(normalized) ? normalized : 'TEK_YONLU';
+};
+
+const normalizeArmType = (value) => {
+  if (!value) return 'T';
+  const normalized = String(value).trim().toUpperCase();
+  return ALLOWED_ARM_TYPES.has(normalized) ? normalized : 'T';
+};
+
+const buildNeighborhoodGroups = (poles) => {
+  const groups = new Map();
+  for (const pole of poles) {
+    const key = (pole.neighborhood || 'Bilinmeyen Mahalle').trim() || 'Bilinmeyen Mahalle';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(pole.id);
+  }
+
+  return Array.from(groups.entries())
+    .map(([neighborhood, poleIds]) => ({ neighborhood, poleIds, count: poleIds.length }))
+    .sort((a, b) => a.neighborhood.localeCompare(b.neighborhood, 'tr'));
+};
+
+// POST /api/poles/reverse-geocode - Fill address by coordinates
+export const reverseGeocodePoleLocation = async (req, res, next) => {
+  try {
+    const latitude = Number(req.body?.latitude);
+    const longitude = Number(req.body?.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Latitude and longitude must be numeric',
+      });
+    }
+
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid latitude/longitude range',
+      });
+    }
+
+    const address = await reverseGeocode(latitude, longitude);
+    if (!address) {
+      return res.json({
+        success: true,
+        data: {
+          address: {
+            city: '',
+            district: '',
+            neighborhood: '',
+            street: '',
+            fullAddress: '',
+          },
+        },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        address,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/poles - List all poles
 export const getPoles = async (req, res, next) => {
   try {
-    const { status, city, district, includeDeleted } = req.query;
+    const { status, city, district, poleType, includeDeleted } = req.query;
     
     // Query with LEFT JOIN to get active order information
     // Use DISTINCT ON to ensure unique poles even if multiple future orders exist
@@ -47,6 +129,10 @@ export const getPoles = async (req, res, next) => {
       query += ` AND p.district ILIKE $${paramCount++}`;
       params.push(`%${district}%`);
     }
+    if (poleType) {
+      query += ` AND p.pole_type = $${paramCount++}`;
+      params.push(normalizePoleType(poleType));
+    }
 
     // Important: ORDER BY must start with the DISTINCT ON column(s)
     query += ' ORDER BY p.id, o.start_date ASC, p.created_at DESC';
@@ -58,6 +144,7 @@ export const getPoles = async (req, res, next) => {
       data: {
         poles: result.rows,
         count: result.rows.length,
+        neighborhoodGroups: buildNeighborhoodGroups(result.rows),
       },
     });
   } catch (error) {
@@ -103,6 +190,9 @@ export const createPole = async (req, res, next) => {
       district: manualDistrict,
       neighborhood: manualNeighborhood,
       street: manualStreet,
+      poleType: manualPoleType,
+      directionType: manualDirectionType,
+      armType: manualArmType,
       sequenceNo,
       startDate,
       endDate,
@@ -138,6 +228,10 @@ export const createPole = async (req, res, next) => {
       }
     }
 
+    const poleType = normalizePoleType(manualPoleType);
+    const directionType = normalizeDirectionType(manualDirectionType);
+    const armType = normalizeArmType(manualArmType);
+
     // Generate pole code (e.g., ISKADB01)
     // Format: IL-ILCE-MAHALLE-CADDE-SIRA
     const poleCode = generatePoleCode(
@@ -169,11 +263,11 @@ export const createPole = async (req, res, next) => {
       // Insert pole
       const poleResult = await client.query(
         `INSERT INTO poles (
-           id, pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, status, created_at, updated_at
+           id, pole_code, latitude, longitude, city, district, neighborhood, street, sequence_no, pole_type, direction_type, arm_type, status, created_at, updated_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'AVAILABLE', NOW(), NOW())
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'AVAILABLE', NOW(), NOW())
          RETURNING *`,
-        [randomUUID(), poleCode, latitude, longitude, city, district, neighborhood, street, sequenceNo]
+        [randomUUID(), poleCode, latitude, longitude, city, district, neighborhood, street, sequenceNo, poleType, directionType, armType]
       );
 
       const pole = poleResult.rows[0];
@@ -220,7 +314,7 @@ export const createPole = async (req, res, next) => {
 export const updatePole = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { latitude, longitude, city, district, neighborhood, street, status, startDate, endDate } = req.body;
+    const { latitude, longitude, city, district, neighborhood, street, poleType, directionType, armType, status, startDate, endDate } = req.body;
 
     const client = await pool.connect();
     try {
@@ -254,6 +348,18 @@ export const updatePole = async (req, res, next) => {
       if (street !== undefined) {
         updates.push(`street = $${paramCount++}`);
         values.push(street);
+      }
+      if (poleType !== undefined) {
+        updates.push(`pole_type = $${paramCount++}`);
+        values.push(normalizePoleType(poleType));
+      }
+      if (directionType !== undefined) {
+        updates.push(`direction_type = $${paramCount++}`);
+        values.push(normalizeDirectionType(directionType));
+      }
+      if (armType !== undefined) {
+        updates.push(`arm_type = $${paramCount++}`);
+        values.push(normalizeArmType(armType));
       }
       if (status !== undefined) {
         updates.push(`status = $${paramCount++}`);

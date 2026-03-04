@@ -19,6 +19,7 @@ const PricingPage = lazy(() => import('./pages/PricingPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
 const HowToUsePage = lazy(() => import('./pages/HowToUsePage'))
+const PoleCapturePage = lazy(() => import('./pages/PoleCapturePage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 function getDefaultRoute(user) {
@@ -81,6 +82,11 @@ function App() {
         <Route path="poles" element={
           <RoleRoute user={user} roles={['SUPER_ADMIN', 'OPERATOR', 'FIELD']}>
             {lazyElement(PolesPage)}
+          </RoleRoute>
+        } />
+        <Route path="pole-capture" element={
+          <RoleRoute user={user} roles={['SUPER_ADMIN', 'OPERATOR', 'FIELD']}>
+            {lazyElement(PoleCapturePage)}
           </RoleRoute>
         } />
         <Route path="orders" element={

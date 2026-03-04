@@ -2,6 +2,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import {
   BellRing,
+  Crosshair,
   DollarSign as DollarSign2,
   FileText,
   LayoutDashboard,
@@ -32,6 +33,7 @@ function DashboardLayout() {
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Panel', roles: ['SUPER_ADMIN', 'OPERATOR'] },
     { path: '/poles', icon: MapPin, label: 'Direkler', roles: ['SUPER_ADMIN', 'OPERATOR', 'FIELD'] },
+    { path: '/pole-capture', icon: Crosshair, label: 'Direk Toplama', roles: ['SUPER_ADMIN', 'OPERATOR', 'FIELD'] },
     { path: '/orders', icon: Package, label: 'Reklamlar', roles: ['SUPER_ADMIN', 'OPERATOR'] },
     { path: '/accounts', icon: Users, label: 'Müşteriler', roles: ['SUPER_ADMIN', 'OPERATOR'] },
     { path: '/print-tasks', icon: Printer, label: 'Baskı İşleri', roles: ['SUPER_ADMIN', 'PRINTER'] },

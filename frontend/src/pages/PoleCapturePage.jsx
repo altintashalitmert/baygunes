@@ -12,6 +12,7 @@ import {
 import 'leaflet/dist/leaflet.css'
 import {
   Crosshair,
+  Download,
   Loader2,
   LocateFixed,
   MapPinned,
@@ -122,6 +123,16 @@ const buildVisiblePages = (currentPage, totalPages) => {
   return pages
 }
 
+const escapeCsvCell = (value) => {
+  const text = value === null || value === undefined ? '' : String(value)
+  if (text.includes('"') || text.includes(',') || text.includes('\n') || text.includes('\r')) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  return text
+}
+
+const toCsvRow = (values) => values.map((value) => escapeCsvCell(value)).join(',')
+
 function PoleCapturePage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
@@ -129,8 +140,11 @@ function PoleCapturePage() {
 
   const [selectedIds, setSelectedIds] = useState([])
   const [isStagingOpen, setIsStagingOpen] = useState(false)
+  const [stagingTab, setStagingTab] = useState('pending')
   const [stagingPage, setStagingPage] = useState(1)
+  const [archivePage, setArchivePage] = useState(1)
   const [isImportAllPending, setIsImportAllPending] = useState(false)
+  const [isArchiveCsvPending, setIsArchiveCsvPending] = useState(false)
   const [isLocating, setIsLocating] = useState(false)
   const [captureSource, setCaptureSource] = useState('MAP_TAP')
   const [gpsAccuracyM, setGpsAccuracyM] = useState(null)
@@ -151,31 +165,56 @@ function PoleCapturePage() {
     return isPointInsideTokat(selectedPoint[0], selectedPoint[1])
   }, [selectedPoint])
 
-  const { data: capturesData, isLoading } = useQuery({
+  const { data: pendingCapturesData, isLoading: isPendingLoading } = useQuery({
     queryKey: ['poleCaptureStaging', 'pending', stagingPage],
     queryFn: () =>
       poleApi.getStaging({ imported: 'false', page: stagingPage, pageSize: STAGING_PAGE_SIZE }),
   })
 
-  const stagingData = capturesData?.data?.data || {}
-  const captures = stagingData?.captures || []
-  const totalCount = stagingData?.totalCount ?? captures.length
-  const totalPages = Math.max(stagingData?.totalPages || 1, 1)
-  const currentPage = stagingData?.page || stagingPage
-  const visiblePages = useMemo(
-    () => buildVisiblePages(currentPage, totalPages),
-    [currentPage, totalPages]
+  const { data: archiveCapturesData, isLoading: isArchiveLoading } = useQuery({
+    queryKey: ['poleCaptureStaging', 'archive', archivePage],
+    queryFn: () =>
+      poleApi.getStaging({ imported: 'true', page: archivePage, pageSize: STAGING_PAGE_SIZE }),
+  })
+
+  const pendingStagingData = pendingCapturesData?.data?.data || {}
+  const pendingCaptures = pendingStagingData?.captures || []
+  const pendingTotalCount = pendingStagingData?.totalCount ?? pendingCaptures.length
+  const pendingTotalPages = Math.max(pendingStagingData?.totalPages || 1, 1)
+  const pendingCurrentPage = pendingStagingData?.page || stagingPage
+  const pendingVisiblePages = useMemo(
+    () => buildVisiblePages(pendingCurrentPage, pendingTotalPages),
+    [pendingCurrentPage, pendingTotalPages]
   )
+
+  const archiveStagingData = archiveCapturesData?.data?.data || {}
+  const archivedCaptures = archiveStagingData?.captures || []
+  const archiveTotalCount = archiveStagingData?.totalCount ?? archivedCaptures.length
+  const archiveTotalPages = Math.max(archiveStagingData?.totalPages || 1, 1)
+  const archiveCurrentPage = archiveStagingData?.page || archivePage
+  const archiveVisiblePages = useMemo(
+    () => buildVisiblePages(archiveCurrentPage, archiveTotalPages),
+    [archiveCurrentPage, archiveTotalPages]
+  )
+
+  const isArchiveTab = stagingTab === 'archive'
+  const activeCaptures = isArchiveTab ? archivedCaptures : pendingCaptures
+  const activeTotalCount = isArchiveTab ? archiveTotalCount : pendingTotalCount
+  const activeCurrentPage = isArchiveTab ? archiveCurrentPage : pendingCurrentPage
+  const activeTotalPages = isArchiveTab ? archiveTotalPages : pendingTotalPages
+  const activeVisiblePages = isArchiveTab ? archiveVisiblePages : pendingVisiblePages
+  const activeIsLoading = isArchiveTab ? isArchiveLoading : isPendingLoading
+
   const captureIds = useMemo(
-    () => captures.map((capture) => String(capture?.id || '')).filter(Boolean),
-    [captures]
+    () => pendingCaptures.map((capture) => String(capture?.id || '')).filter(Boolean),
+    [pendingCaptures]
   )
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const areAllVisibleSelected = captureIds.length > 0 && captureIds.every((id) => selectedSet.has(id))
 
   useEffect(() => {
     setSelectedIds([])
-  }, [stagingPage])
+  }, [stagingPage, stagingTab])
 
   const createCaptureMutation = useMutation({
     mutationFn: poleApi.createStaging,
@@ -196,7 +235,7 @@ function PoleCapturePage() {
     mutationFn: (ids) => poleApi.importStaging(ids),
     onSuccess: (response) => {
       const importedCount = response?.data?.data?.importedCount || 0
-      if (importedCount > 0 && captures.length === importedCount && stagingPage > 1) {
+      if (importedCount > 0 && pendingCaptures.length === importedCount && stagingPage > 1) {
         setStagingPage((prev) => Math.max(prev - 1, 1))
       }
       queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
@@ -214,7 +253,7 @@ function PoleCapturePage() {
     onSuccess: (response) => {
       const deletedCount = response?.data?.data?.deletedCount || 0
       const deletedIds = response?.data?.data?.deletedIds || []
-      if (deletedCount > 0 && captures.length === deletedCount && stagingPage > 1) {
+      if (deletedCount > 0 && pendingCaptures.length === deletedCount && stagingPage > 1) {
         setStagingPage((prev) => Math.max(prev - 1, 1))
       }
       queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
@@ -404,6 +443,106 @@ function PoleCapturePage() {
     }
   }
 
+  const getAllArchivedCaptures = async () => {
+    const allRows = []
+    const pageSize = 200
+    let page = 1
+    let total = 1
+
+    while (page <= total) {
+      const response = await poleApi.getStaging({ imported: 'true', page, pageSize })
+      const data = response?.data?.data || {}
+      const rows = Array.isArray(data.captures) ? data.captures : []
+      allRows.push(...rows)
+      total = Math.max(Number(data.totalPages) || 1, 1)
+      page += 1
+    }
+
+    return allRows
+  }
+
+  const handleDownloadArchiveCsv = async () => {
+    if (isArchiveCsvPending) return
+
+    setIsArchiveCsvPending(true)
+    try {
+      const rows = await getAllArchivedCaptures()
+      if (rows.length === 0) {
+        alert('CSV icin arsiv kaydi yok.')
+        return
+      }
+
+      const headers = [
+        'capture_id',
+        'generated_code',
+        'imported_pole_id',
+        'latitude',
+        'longitude',
+        'city',
+        'district',
+        'neighborhood',
+        'street',
+        'direction_type',
+        'arm_type',
+        'lighting_type',
+        'source',
+        'gps_accuracy_m',
+        'notes',
+        'captured_by',
+        'captured_by_name',
+        'captured_at',
+        'imported_at',
+        'created_at',
+        'updated_at',
+      ]
+
+      const csvRows = [
+        toCsvRow(headers),
+        ...rows.map((capture) =>
+          toCsvRow([
+            capture.id,
+            capture.generated_code,
+            capture.imported_pole_id,
+            capture.latitude,
+            capture.longitude,
+            capture.city,
+            capture.district,
+            capture.neighborhood,
+            capture.street,
+            capture.direction_type,
+            capture.arm_type,
+            capture.lighting_type,
+            capture.source,
+            capture.gps_accuracy_m,
+            capture.notes,
+            capture.captured_by,
+            capture.captured_by_name,
+            capture.captured_at,
+            capture.imported_at,
+            capture.created_at,
+            capture.updated_at,
+          ])
+        ),
+      ]
+
+      const csvContent = `\uFEFF${csvRows.join('\n')}`
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
+      link.href = url
+      link.setAttribute('download', `direk-arsiv-${stamp}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      alert(error?.response?.data?.error || error?.message || 'Arsiv CSV indirilemedi.')
+    } finally {
+      setIsArchiveCsvPending(false)
+    }
+  }
+
   return (
     <>
       <div className="grid h-[calc(100vh-140px)] min-h-[680px] grid-cols-1 gap-4 lg:grid-cols-[minmax(360px,430px)_minmax(0,1fr)]">
@@ -422,7 +561,7 @@ function PoleCapturePage() {
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
               >
                 <UploadCloud className="h-4 w-4" />
-                Staging ({totalCount})
+                Staging ({pendingTotalCount})
               </button>
             </div>
 
@@ -661,89 +800,129 @@ function PoleCapturePage() {
             className="relative z-[12001] flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-              <h2 className="text-sm font-bold text-slate-900">
-                Bekleyen staging kayitlari ({totalCount})
-              </h2>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {canImport && (
+            <div className="border-b border-slate-200 px-4 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    {isArchiveTab ? `Arsiv kayitlari (${archiveTotalCount})` : `Bekleyen staging kayitlari (${pendingTotalCount})`}
+                  </h2>
+                  <div className="mt-2 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setStagingTab('pending')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+                        !isArchiveTab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                      }`}
+                    >
+                      Bekleyen ({pendingTotalCount})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStagingTab('archive')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+                        isArchiveTab ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                      }`}
+                    >
+                      Arsiv ({archiveTotalCount})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {!isArchiveTab && canImport && (
+                    <button
+                      type="button"
+                      disabled={pendingCaptures.length === 0 || isBulkActionPending}
+                      onClick={handleImportAllCaptures}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <UploadCloud className="h-4 w-4" />
+                      {isImportAllPending ? 'Tum kayitlar import ediliyor...' : 'Tumunu Import Et'}
+                    </button>
+                  )}
+                  {!isArchiveTab && canImport && (
+                    <button
+                      type="button"
+                      disabled={pendingCaptures.length === 0 || isBulkActionPending}
+                      onClick={handleToggleSelectAll}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {areAllVisibleSelected ? 'Secimi Temizle' : 'Tumunu Sec'}
+                    </button>
+                  )}
+                  {!isArchiveTab && canImport && selectedIds.length > 0 && (
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                      Secili: {selectedIds.length}
+                    </span>
+                  )}
+                  {!isArchiveTab && canImport && (
+                    <button
+                      type="button"
+                      disabled={selectedIds.length === 0 || isBulkActionPending}
+                      onClick={() => importMutation.mutate(selectedIds)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <UploadCloud className="h-4 w-4" />
+                      Secileni Import Et
+                    </button>
+                  )}
+                  {!isArchiveTab && canDelete && (
+                    <button
+                      type="button"
+                      disabled={selectedIds.length === 0 || isBulkActionPending}
+                      onClick={() => handleDeleteCaptures(selectedIds)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Secileni Sil
+                    </button>
+                  )}
+                  {isArchiveTab && (
+                    <button
+                      type="button"
+                      disabled={isArchiveCsvPending || archiveTotalCount === 0 || activeIsLoading}
+                      onClick={handleDownloadArchiveCsv}
+                      className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Download className="h-4 w-4" />
+                      {isArchiveCsvPending ? 'CSV hazirlaniyor...' : 'CSV Indir'}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    disabled={captures.length === 0 || isBulkActionPending}
-                    onClick={handleImportAllCaptures}
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setIsStagingOpen(false)}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    <UploadCloud className="h-4 w-4" />
-                    {isImportAllPending ? 'Tum kayitlar import ediliyor...' : 'Tumunu Import Et'}
+                    Kapat
                   </button>
-                )}
-                {canImport && (
-                  <button
-                    type="button"
-                    disabled={captures.length === 0 || isBulkActionPending}
-                    onClick={handleToggleSelectAll}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {areAllVisibleSelected ? 'Secimi Temizle' : 'Tumunu Sec'}
-                  </button>
-                )}
-                {canImport && selectedIds.length > 0 && (
-                  <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">
-                    Secili: {selectedIds.length}
-                  </span>
-                )}
-                {canImport && (
-                  <button
-                    type="button"
-                    disabled={selectedIds.length === 0 || isBulkActionPending}
-                    onClick={() => importMutation.mutate(selectedIds)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <UploadCloud className="h-4 w-4" />
-                    Secileni Import Et
-                  </button>
-                )}
-                {canDelete && (
-                  <button
-                    type="button"
-                    disabled={selectedIds.length === 0 || isBulkActionPending}
-                    onClick={() => handleDeleteCaptures(selectedIds)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Secileni Sil
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsStagingOpen(false)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Kapat
-                </button>
+                </div>
               </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {isLoading && <p className="text-xs text-slate-500">Yukleniyor...</p>}
-              {!isLoading && captures.length === 0 && (
+              {activeIsLoading && <p className="text-xs text-slate-500">Yukleniyor...</p>}
+              {!activeIsLoading && activeCaptures.length === 0 && (
                 <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center text-xs text-slate-500">
-                  Heniz bekleyen kayit yok.
+                  {isArchiveTab ? 'Arsivde kayit yok.' : 'Heniz bekleyen kayit yok.'}
                 </div>
               )}
 
               <div className="space-y-2">
-                {captures.map((capture) => {
+                {activeCaptures.map((capture) => {
                   const checked = selectedIds.includes(capture.id)
+                  const importedAtLabel = capture.imported_at
+                    ? new Date(capture.imported_at).toLocaleString('tr-TR')
+                    : null
+
                   return (
                     <div
                       key={capture.id}
                       className={`block rounded-xl border p-3 ${
-                        checked ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white'
+                        !isArchiveTab && checked ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white'
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        {canImport && (
+                        {!isArchiveTab && canImport && (
                           <input
                             type="checkbox"
                             checked={checked}
@@ -765,6 +944,12 @@ function PoleCapturePage() {
                           <p className="mt-1 text-[11px] font-mono text-slate-500">
                             {Number(capture.latitude).toFixed(6)}, {Number(capture.longitude).toFixed(6)}
                           </p>
+                          {isArchiveTab && importedAtLabel && (
+                            <p className="mt-1 text-[11px] text-slate-500">Import: {importedAtLabel}</p>
+                          )}
+                          {!!capture.notes && (
+                            <p className="mt-1 text-[11px] text-slate-600">Not: {capture.notes}</p>
+                          )}
                           <div className="mt-1 flex flex-wrap gap-1">
                             <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                               {capture.direction_type}
@@ -777,7 +962,7 @@ function PoleCapturePage() {
                             </span>
                           </div>
                         </div>
-                        {canDelete && (
+                        {!isArchiveTab && canDelete && (
                           <button
                             type="button"
                             onClick={() => handleDeleteCaptures([capture.id])}
@@ -796,26 +981,32 @@ function PoleCapturePage() {
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                 <p className="text-[11px] text-slate-500">
-                  Sayfa {currentPage}/{totalPages} · Toplam {totalCount} kayit
+                  Sayfa {activeCurrentPage}/{activeTotalPages} · Toplam {activeTotalCount} kayit
                 </p>
                 <div className="flex flex-wrap items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => setStagingPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage <= 1 || isLoading}
+                    onClick={() =>
+                      isArchiveTab
+                        ? setArchivePage((prev) => Math.max(prev - 1, 1))
+                        : setStagingPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={activeCurrentPage <= 1 || activeIsLoading}
                     className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Onceki
                   </button>
-                  {visiblePages.map((pageItem) =>
+                  {activeVisiblePages.map((pageItem) =>
                     typeof pageItem === 'number' ? (
                       <button
-                        key={`staging-page-${pageItem}`}
+                        key={`${stagingTab}-page-${pageItem}`}
                         type="button"
-                        onClick={() => setStagingPage(pageItem)}
-                        disabled={isLoading}
+                        onClick={() =>
+                          isArchiveTab ? setArchivePage(pageItem) : setStagingPage(pageItem)
+                        }
+                        disabled={activeIsLoading}
                         className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${
-                          pageItem === currentPage
+                          pageItem === activeCurrentPage
                             ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                             : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                         }`}
@@ -823,15 +1014,19 @@ function PoleCapturePage() {
                         {pageItem}
                       </button>
                     ) : (
-                      <span key={`staging-page-${pageItem}`} className="px-1 text-xs text-slate-400">
+                      <span key={`${stagingTab}-page-${pageItem}`} className="px-1 text-xs text-slate-400">
                         ...
                       </span>
                     )
                   )}
                   <button
                     type="button"
-                    onClick={() => setStagingPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage >= totalPages || isLoading}
+                    onClick={() =>
+                      isArchiveTab
+                        ? setArchivePage((prev) => Math.min(prev + 1, activeTotalPages))
+                        : setStagingPage((prev) => Math.min(prev + 1, activeTotalPages))
+                    }
+                    disabled={activeCurrentPage >= activeTotalPages || activeIsLoading}
                     className="rounded-md border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Sonraki

@@ -28,6 +28,19 @@ const TOKAT_BOUNDS = [
   [40.58, 36.86],
 ]
 const STAGING_PAGE_SIZE = 25
+const INITIAL_FORM = {
+  latitude: '',
+  longitude: '',
+  city: 'Tokat',
+  district: 'Merkez',
+  neighborhood: '',
+  street: '',
+  directionType: 'TEK_YONLU',
+  armType: 'T',
+  lightingType: 'NORMAL',
+  allowOutsideTokat: false,
+  notes: '',
+}
 
 const directionOptions = [
   { value: 'TEK_YONLU', label: 'Tek yonlu' },
@@ -124,19 +137,7 @@ function PoleCapturePage() {
   const [autoAddressNote, setAutoAddressNote] = useState('')
   const [autoFillEnabled, setAutoFillEnabled] = useState(true)
 
-  const [form, setForm] = useState({
-    latitude: '',
-    longitude: '',
-    city: 'Tokat',
-    district: 'Merkez',
-    neighborhood: '',
-    street: '',
-    directionType: 'TEK_YONLU',
-    armType: 'T',
-    lightingType: 'NORMAL',
-    allowOutsideTokat: false,
-    notes: '',
-  })
+  const [form, setForm] = useState({ ...INITIAL_FORM })
 
   const selectedPoint = useMemo(() => {
     const lat = parseCoord(form.latitude)
@@ -180,13 +181,11 @@ function PoleCapturePage() {
     mutationFn: poleApi.createStaging,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
-      setForm((prev) => ({
-        ...prev,
-        neighborhood: prev.neighborhood,
-        street: prev.street,
-        notes: '',
-      }))
       alert('Direk koordinati kaydedildi.')
+      setForm({ ...INITIAL_FORM })
+      setCaptureSource('MAP_TAP')
+      setGpsAccuracyM(null)
+      setAutoAddressNote('')
     },
     onError: (error) => {
       alert(error?.response?.data?.error || error.message || 'Kayit basarisiz.')

@@ -11,12 +11,12 @@ import {
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
-  CheckCircle2,
   Crosshair,
   Loader2,
   LocateFixed,
   MapPinned,
   Save,
+  Trash2,
   UploadCloud,
 } from 'lucide-react'
 import { poleApi } from '../api/poleApi'
@@ -166,6 +166,20 @@ function PoleCapturePage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: (ids) => poleApi.deleteStaging(ids),
+    onSuccess: (response) => {
+      const deletedCount = response?.data?.data?.deletedCount || 0
+      const deletedIds = response?.data?.data?.deletedIds || []
+      queryClient.invalidateQueries({ queryKey: ['poleCaptureStaging'] })
+      setSelectedIds((prev) => prev.filter((id) => !deletedIds.includes(id)))
+      alert(`${deletedCount} staging kaydi silindi.`)
+    },
+    onError: (error) => {
+      alert(error?.response?.data?.error || error.message || 'Silme islemi basarisiz.')
+    },
+  })
+
   const reverseGeocodeMutation = useMutation({
     mutationFn: poleApi.reverseGeocode,
   })
@@ -268,6 +282,19 @@ function PoleCapturePage() {
   }
 
   const canImport = user?.role === 'SUPER_ADMIN' || user?.role === 'OPERATOR'
+  const canDelete = canImport
+
+  const handleDeleteCaptures = (ids) => {
+    const uniqueIds = [...new Set((Array.isArray(ids) ? ids : [ids]).filter(Boolean))]
+    if (uniqueIds.length === 0) return
+    const confirmed = window.confirm(
+      uniqueIds.length === 1
+        ? 'Bu staging kaydi silinsin mi?'
+        : `${uniqueIds.length} staging kaydi silinsin mi?`
+    )
+    if (!confirmed) return
+    deleteMutation.mutate(uniqueIds)
+  }
 
   return (
     <>
@@ -473,7 +500,7 @@ function PoleCapturePage() {
           </div>
         </section>
 
-        <section className="min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+        <section className="relative z-0 min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
           <div className="mb-2 flex items-center gap-2 px-2 py-1 text-xs text-slate-600">
             <Crosshair className="h-4 w-4 text-indigo-600" />
             Haritaya dokununca enlem / boylam otomatik set edilir.
@@ -519,27 +546,38 @@ function PoleCapturePage() {
 
       {isStagingOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-3"
+          className="fixed inset-0 z-[12000] flex items-center justify-center bg-slate-900/55 p-3 backdrop-blur-[1px]"
           onClick={() => setIsStagingOpen(false)}
         >
           <div
-            className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="relative z-[12001] flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <h2 className="text-sm font-bold text-slate-900">
                 Bekleyen staging kayitlari ({captures.length})
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {canImport && (
                   <button
                     type="button"
-                    disabled={selectedIds.length === 0 || importMutation.isPending}
+                    disabled={selectedIds.length === 0 || importMutation.isPending || deleteMutation.isPending}
                     onClick={() => importMutation.mutate(selectedIds)}
                     className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <UploadCloud className="h-4 w-4" />
                     Secileni Import Et
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    disabled={selectedIds.length === 0 || deleteMutation.isPending || importMutation.isPending}
+                    onClick={() => handleDeleteCaptures(selectedIds)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Secileni Sil
                   </button>
                 )}
                 <button
@@ -564,7 +602,7 @@ function PoleCapturePage() {
                 {captures.map((capture) => {
                   const checked = selectedIds.includes(capture.id)
                   return (
-                    <label
+                    <div
                       key={capture.id}
                       className={`block rounded-xl border p-3 ${
                         checked ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white'
@@ -604,9 +642,19 @@ function PoleCapturePage() {
                             </span>
                           </div>
                         </div>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCaptures([capture.id])}
+                            disabled={deleteMutation.isPending || importMutation.isPending}
+                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Sil
+                          </button>
+                        )}
                       </div>
-                    </label>
+                    </div>
                   )
                 })}
               </div>

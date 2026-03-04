@@ -43,6 +43,9 @@ export const poleApi = {
   // POST /api/poles/staging/import
   importStaging: (ids) => api.post('/poles/staging/import', { ids }),
 
+  // POST /api/poles/staging/delete
+  deleteStaging: (ids) => api.post('/poles/staging/delete', { ids }),
+
   // POST /api/orders
   createOrder: (data) => api.post('/orders', data),
 }

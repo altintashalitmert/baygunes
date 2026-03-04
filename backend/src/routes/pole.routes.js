@@ -12,6 +12,7 @@ import {
 } from '../controllers/pole.controller.js';
 import {
   createPoleCapture,
+  deletePoleCaptures,
   getPoleCaptureGroups,
   importPoleCaptures,
   listPoleCaptures,
@@ -49,6 +50,7 @@ router.get('/staging', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), lis
 router.get('/staging/groups', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), getPoleCaptureGroups);
 router.post('/staging', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), createPoleCapture);
 router.post('/staging/import', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), importPoleCaptures);
+router.post('/staging/delete', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), deletePoleCaptures);
 
 // GET /api/poles/:id - Get pole by ID
 router.get('/:id', getPoleById);

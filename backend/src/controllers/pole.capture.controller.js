@@ -133,6 +133,11 @@ const buildCodePrefix = ({ neighborhood, street }) => {
   return `TOKAT-${mahalleSegment}-${streetSegment}`;
 };
 
+const normalizeCaptureIds = (value) => {
+  const source = Array.isArray(value) ? value : [value];
+  return [...new Set(source.map((item) => String(item ?? '').trim()).filter(Boolean))];
+};
+
 const validateCoordinates = ({ latitude, longitude, allowOutsideTokat }) => {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return 'Enlem ve boylam sayisal bir deger olmali.';
@@ -505,5 +510,40 @@ export const importPoleCaptures = async (req, res, next) => {
     next(error);
   } finally {
     client.release();
+  }
+};
+
+export const deletePoleCaptures = async (req, res, next) => {
+  try {
+    const ids = normalizeCaptureIds(req.body?.ids);
+    if (ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Silme icin en az bir capture id gerekli.',
+      });
+    }
+
+    const result = await pool.query(
+      `
+        DELETE FROM pole_capture_staging
+        WHERE id::text = ANY($1::text[])
+          AND imported_at IS NULL
+        RETURNING id::text AS id
+      `,
+      [ids]
+    );
+
+    const deletedIds = result.rows.map((row) => row.id);
+
+    res.json({
+      success: true,
+      data: {
+        requestedCount: ids.length,
+        deletedCount: result.rowCount || 0,
+        deletedIds,
+      },
+    });
+  } catch (error) {
+    next(error);
   }
 };

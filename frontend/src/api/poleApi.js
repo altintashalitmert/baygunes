@@ -28,6 +28,13 @@ export const poleApi = {
   // POST /api/poles/bulk-delete
   bulkDelete: (poleIds) => api.post('/poles/bulk-delete', { poleIds }),
 
+  // POST /api/poles/bulk-export
+  exportCsv: (poleIds) =>
+    api.post('/poles/bulk-export', { poleIds }, { responseType: 'blob' }),
+
+  // POST /api/poles/bulk-import
+  importCsv: ({ csvContent, fileName }) => api.post('/poles/bulk-import', { csvContent, fileName }),
+
   // GET /api/poles/staging
   getStaging: (params) => api.get('/poles/staging', { params }),
 

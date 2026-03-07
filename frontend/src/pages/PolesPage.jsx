@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
   CheckCircle2,
   ChevronLeft,
+  Download,
   Layers,
   Loader2,
   MapPin,
   Plus,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react'
 import { poleApi } from '../api/poleApi'
 import { orderApi } from '../api/orderApi'
@@ -50,8 +52,36 @@ const uniqueSorted = (values) =>
     a.localeCompare(b, 'tr')
   )
 
+const parseDownloadFilename = (contentDisposition) => {
+  const matched = /filename="?([^"]+)"?/i.exec(contentDisposition || '')
+  return matched?.[1] || `selected-poles-${Date.now()}.csv`
+}
+
+const resolveRequestError = async (error, fallback) => {
+  const responseData = error?.response?.data
+
+  if (typeof responseData?.error === 'string') {
+    return responseData.error
+  }
+
+  if (responseData instanceof Blob) {
+    try {
+      const text = await responseData.text()
+      const parsed = JSON.parse(text)
+      if (typeof parsed?.error === 'string') {
+        return parsed.error
+      }
+    } catch {
+      // Ignore blob parsing failures and fall back to generic error text.
+    }
+  }
+
+  return error?.message || fallback
+}
+
 function PolesPage() {
   const streetViewApiKey = (import.meta.env.VITE_GOOGLE_MAPS_EMBED_API_KEY || '').trim()
+  const importInputRef = useRef(null)
 
   const [selectedPoleId, setSelectedPoleId] = useState(null)
   const [selectedPoleIds, setSelectedPoleIds] = useState([])
@@ -278,6 +308,14 @@ function PolesPage() {
     },
   })
 
+  const exportCsvMutation = useMutation({
+    mutationFn: (poleIds) => poleApi.exportCsv(poleIds),
+  })
+
+  const importCsvMutation = useMutation({
+    mutationFn: ({ csvContent, fileName }) => poleApi.importCsv({ csvContent, fileName }),
+  })
+
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ id, newStatus }) => orderApi.updateStatus(id, { newStatus }),
     onSuccess: () => {
@@ -378,6 +416,64 @@ function PolesPage() {
     setShowOrderModal(true)
   }
 
+  const handleExportSelected = async () => {
+    if (selectedPoleIds.length === 0) {
+      alert('CSV export icin once direk secin.')
+      return
+    }
+
+    try {
+      const response = await exportCsvMutation.mutateAsync(selectedPoleIds)
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+      const downloadUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = parseDownloadFilename(response.headers?.['content-disposition'])
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      alert(await resolveRequestError(error, 'CSV export olusturulamadi.'))
+    }
+  }
+
+  const handleImportClick = () => {
+    importInputRef.current?.click()
+  }
+
+  const handleImportFileChange = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('Sadece CSV dosyasi yukleyebilirsiniz.')
+      return
+    }
+
+    try {
+      const csvContent = await file.text()
+      const response = await importCsvMutation.mutateAsync({
+        csvContent,
+        fileName: file.name,
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['poles'] })
+      setSelectedPoleIds([])
+      setSelectedPoleId(null)
+      setViewMode('list')
+
+      const summary = response?.data?.data
+      alert(
+        `CSV import tamamlandi. ${summary?.createdCount || 0} yeni, ${summary?.updatedCount || 0} guncel direk isledi.`
+      )
+    } catch (error) {
+      alert(await resolveRequestError(error, 'CSV import tamamlanamadi.'))
+    }
+  }
+
   const backToList = () => {
     setSelectedPoleId(null)
     setIsCreating(false)
@@ -466,6 +562,15 @@ function PolesPage() {
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Toplu Durum
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportClick}
+                  disabled={importCsvMutation.isPending}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {importCsvMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  CSV Import
                 </button>
                 <button
                   type="button"
@@ -984,14 +1089,29 @@ function PolesPage() {
 
             {isMultiSelectMode && selectedPoleIds.length > 0 && viewMode === 'list' && (
               <div className="border-t border-slate-200 bg-slate-50 p-3">
-                <button
-                  type="button"
-                  onClick={handleBulkOrder}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-                >
-                  <Layers className="h-4 w-4" />
-                  ({selectedPoleIds.length}) direk icin reklam olustur
-                </button>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleExportSelected}
+                    disabled={exportCsvMutation.isPending}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {exportCsvMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    ({selectedPoleIds.length}) direk CSV export
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkOrder}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    <Layers className="h-4 w-4" />
+                    ({selectedPoleIds.length}) direk icin reklam olustur
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1061,6 +1181,14 @@ function PolesPage() {
         onClose={() => setStreetViewPole(null)}
         pole={streetViewPole}
         apiKey={streetViewApiKey}
+      />
+
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        className="hidden"
+        onChange={handleImportFileChange}
       />
     </div>
   )

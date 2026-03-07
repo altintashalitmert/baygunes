@@ -17,7 +17,12 @@ import {
   importPoleCaptures,
   listPoleCaptures,
 } from '../controllers/pole.capture.controller.js';
-import { bulkUpdatePoles, bulkDeletePoles } from '../controllers/pole.bulk.controller.js';
+import {
+  bulkDeletePoles,
+  bulkUpdatePoles,
+  exportPolesCsv,
+  importPolesCsv,
+} from '../controllers/pole.bulk.controller.js';
 import { authMiddleware, roleMiddleware } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -28,6 +33,8 @@ router.use(authMiddleware);
 // Bulk operations (must be before /:id routes)
 router.patch('/bulk-update', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), bulkUpdatePoles);
 router.post('/bulk-delete', roleMiddleware(['SUPER_ADMIN']), bulkDeletePoles);
+router.post('/bulk-export', roleMiddleware(['SUPER_ADMIN', 'OPERATOR', 'FIELD']), exportPolesCsv);
+router.post('/bulk-import', roleMiddleware(['SUPER_ADMIN', 'OPERATOR']), importPolesCsv);
 
 // GET /api/poles/available - Must be before /:id route
 router.get('/available', getAvailablePoles);

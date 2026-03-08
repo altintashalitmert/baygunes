@@ -1,0 +1,6 @@
+node_modules
+dist
+.npm-local
+temp-cache
+*.log
+.DS_Store

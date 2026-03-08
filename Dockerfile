@@ -13,13 +13,14 @@ COPY backend/prisma ./backend/prisma/
 
 # Install backend dependencies
 WORKDIR /app/backend
-RUN npm ci
+RUN npm ci --omit=dev --no-audit --no-fund
 
 # Copy backend source code
 COPY backend .
 
 # Generate Prisma Client
 RUN npx prisma generate
+RUN mkdir -p public/uploads/reports && npm cache clean --force
 
 # Build frontend (if serving static files from backend)
 # For now, we assume frontend is built separately or served via separate service

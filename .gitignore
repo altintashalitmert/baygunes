@@ -5,6 +5,7 @@
 
 # Dependencies
 node_modules/
+frontend/.npm-local/
 
 
 # Build outputs
@@ -48,6 +49,7 @@ coverage/
 .cache/
 .parcel-cache/
 frontend/temp-cache/
+frontend/.npm-local/
 
 # Misc
 *.pem

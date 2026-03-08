@@ -11,7 +11,7 @@ const loadExistingPoles = async (client, ids, poleCodes) => {
 
   if (ids.length > 0) {
     params.push(ids);
-    clauses.push(`id = ANY($${params.length}::text[])`);
+    clauses.push(`id::text = ANY($${params.length}::text[])`);
   }
 
   if (poleCodes.length > 0) {
@@ -53,7 +53,7 @@ export const bulkUpdatePoles = async (req, res, next) => {
     }
 
     const result = await pool.query(
-      'UPDATE poles SET status = $1, updated_at = NOW() WHERE id = ANY($2) RETURNING *',
+      'UPDATE poles SET status = $1, updated_at = NOW() WHERE id::text = ANY($2::text[]) RETURNING *',
       [status, poleIds]
     );
 
@@ -99,7 +99,7 @@ export const exportPolesCsv = async (req, res, next) => {
           arm_type,
           status
         FROM poles
-        WHERE id = ANY($1::text[])
+        WHERE id::text = ANY($1::text[])
           AND deleted_at IS NULL
         ORDER BY pole_code ASC
       `,
@@ -301,7 +301,7 @@ export const bulkDeletePoles = async (req, res, next) => {
     // Check for active orders
     const activeOrders = await pool.query(
       `SELECT DISTINCT pole_id FROM orders 
-       WHERE pole_id = ANY($1) 
+       WHERE pole_id::text = ANY($1::text[]) 
        AND status NOT IN ('COMPLETED', 'EXPIRED', 'CANCELLED')`,
       [poleIds]
     );
@@ -318,7 +318,7 @@ export const bulkDeletePoles = async (req, res, next) => {
        SET deleted_at = NOW(),
            status = 'INACTIVE',
            updated_at = NOW()
-       WHERE id = ANY($1)
+       WHERE id::text = ANY($1::text[])
        AND deleted_at IS NULL
        RETURNING id, pole_code, deleted_at`,
       [poleIds]

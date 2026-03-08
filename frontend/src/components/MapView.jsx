@@ -244,6 +244,19 @@ const getBoundsForPoles = (poles) => {
   ]
 }
 
+const getClusterPoleIds = (clusterLayer) => {
+  if (!clusterLayer?.getAllChildMarkers) return []
+
+  return Array.from(
+    new Set(
+      clusterLayer
+        .getAllChildMarkers()
+        .map((marker) => String(marker?.options?.poleId || '').trim())
+        .filter(Boolean)
+    )
+  )
+}
+
 // NOTE: added isMultiSelect and selectedPoleIds to props
 function MapView({
   poles = [],
@@ -256,8 +269,11 @@ function MapView({
   highlightPoles = [],
   multiSelectEnabled = false,
   onAreaSelect,
+  onClusterSelect,
 }) {
   const mapRef = useRef(null)
+  const multiSelectEnabledRef = useRef(multiSelectEnabled)
+  const onClusterSelectRef = useRef(onClusterSelect)
   const [, forceUpdate] = useState(0)
 
   // Determine effective center only if SINGLE selection
@@ -272,6 +288,14 @@ function MapView({
   }, [highlightBounds])
   const isBoxMultiSelectActive = Boolean(multiSelectEnabled && onAreaSelect)
 
+  useEffect(() => {
+    multiSelectEnabledRef.current = multiSelectEnabled
+  }, [multiSelectEnabled])
+
+  useEffect(() => {
+    onClusterSelectRef.current = onClusterSelect
+  }, [onClusterSelect])
+
   const handleAreaSelect = (bounds) => {
     if (!onAreaSelect) return
     const selectedIds = poles
@@ -285,6 +309,18 @@ function MapView({
 
     if (selectedIds.length > 0) {
       onAreaSelect(selectedIds)
+    }
+  }
+
+  const handleClusterClick = (event) => {
+    if (!multiSelectEnabledRef.current || !onClusterSelectRef.current) return
+
+    event?.originalEvent?.preventDefault?.()
+    event?.originalEvent?.stopPropagation?.()
+
+    const clusterPoleIds = getClusterPoleIds(event?.layer)
+    if (clusterPoleIds.length > 0) {
+      onClusterSelectRef.current(clusterPoleIds)
     }
   }
 
@@ -307,12 +343,15 @@ function MapView({
         />
         
         <MarkerClusterGroup
+          key={`cluster-mode-${multiSelectEnabled ? 'multi' : 'single'}`}
           chunkedLoading
           maxClusterRadius={40}
           showCoverageOnHover={false}
-          spiderfyOnMaxZoom
+          zoomToBoundsOnClick={!multiSelectEnabled}
+          spiderfyOnMaxZoom={!multiSelectEnabled}
           disableClusteringAtZoom={16}
           iconCreateFunction={createClusterIcon}
+          onClick={handleClusterClick}
         >
           {poles.map((pole) => {
             const countdown = pole.end_date ? getCountdownText(pole.end_date) : null
@@ -324,6 +363,7 @@ function MapView({
                 key={pole.id}
                 position={[pole.latitude, pole.longitude]}
                 icon={createPoleIcon(pole.status, poleType, isSelected)}
+                poleId={pole.id}
                 zIndexOffset={isSelected ? 2000 : 0}
                 eventHandlers={{
                   click: () => onPoleClick && onPoleClick(pole),

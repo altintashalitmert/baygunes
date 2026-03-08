@@ -2,16 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
-  CheckCircle2,
   ChevronLeft,
   Download,
   Layers,
   Loader2,
   MapPin,
-  Plus,
   Search,
   Trash2,
-  Upload,
 } from 'lucide-react'
 import { poleApi } from '../api/poleApi'
 import { orderApi } from '../api/orderApi'
@@ -533,6 +530,17 @@ function PolesPage() {
     setSelectedPoleIds((prev) => Array.from(new Set([...prev, ...areaPoleIds])))
   }, [])
 
+  const handleMapClusterSelect = useCallback((clusterPoleIds) => {
+    setSelectedPoleIds((prev) => {
+      const allSelected = clusterPoleIds.every((poleId) => prev.includes(poleId))
+      if (allSelected) {
+        return prev.filter((poleId) => !clusterPoleIds.includes(poleId))
+      }
+
+      return Array.from(new Set([...prev, ...clusterPoleIds]))
+    })
+  }, [])
+
   const openStreetView = useCallback((event, pole) => {
     event.stopPropagation()
     event.preventDefault()
@@ -544,38 +552,27 @@ function PolesPage() {
       <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
         <section className="flex min-h-0 flex-col gap-4">
           <div className="glass-panel rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="inline-flex items-center gap-2 text-xl font-extrabold text-slate-900">
-                  <span className="rounded-lg bg-indigo-600 p-1.5 text-white">
-                    <Layers className="h-4 w-4" />
-                  </span>
-                  Direkler
-                </h1>
-                <p className="mt-1 text-xs text-slate-500">Listeyi yonetin, haritada secim yapin.</p>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => setShowBulkModal(true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  className="inline-flex min-w-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
                   Toplu Durum
                 </button>
                 <button
                   type="button"
                   onClick={handleImportClick}
                   disabled={importCsvMutation.isPending}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-w-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {importCsvMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  CSV Import
+                  {importCsvMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  <span className={importCsvMutation.isPending ? 'sr-only' : ''}>CSV Import</span>
                 </button>
                 <button
                   type="button"
                   onClick={toggleMultiSelect}
-                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                  className={`inline-flex min-w-0 items-center justify-center rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
                     isMultiSelectMode
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -586,12 +583,10 @@ function PolesPage() {
                 <button
                   type="button"
                   onClick={startCreating}
-                  className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                  className="inline-flex min-w-0 items-center justify-center rounded-lg bg-indigo-600 px-2 py-2 text-[11px] font-semibold text-white hover:bg-indigo-700"
                 >
-                  <Plus className="h-4 w-4" />
                   Yeni
                 </button>
-              </div>
             </div>
 
             {viewMode === 'list' && (
@@ -1127,6 +1122,7 @@ function PolesPage() {
             highlightPoles={hasAreaFilter ? locationFilteredPoles : []}
             multiSelectEnabled={isMultiSelectMode && !isCreating && !isEditing}
             onAreaSelect={handleMapAreaSelect}
+            onClusterSelect={handleMapClusterSelect}
           />
 
           {(isCreating || isEditing) && (
@@ -1136,7 +1132,7 @@ function PolesPage() {
           )}
           {isMultiSelectMode && !isCreating && !isEditing && (
             <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-blue-200 bg-blue-50/95 px-3 py-2 text-xs font-semibold text-blue-700">
-              Shift + sol tik ile surukleyerek alan secin.
+              Shift + sol tik ile alan secin, sayi balonuna tiklayarak cluster secin.
             </div>
           )}
         </section>

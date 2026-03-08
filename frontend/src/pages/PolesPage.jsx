@@ -205,7 +205,7 @@ function PolesPage() {
     return matchesCity && matchesDistrict && matchesNeighborhood
   })
 
-  const filteredPoles = locationFilteredPoles.filter((pole) => {
+  const statusScopedPoles = locationFilteredPoles.filter((pole) => {
     const districtText = pole.district || ''
     const neighborhoodText = pole.neighborhood || ''
     const streetText = pole.street || ''
@@ -216,10 +216,13 @@ function PolesPage() {
       districtText.toLowerCase().includes(searchText.toLowerCase()) ||
       neighborhoodText.toLowerCase().includes(searchText.toLowerCase()) ||
       streetText.toLowerCase().includes(searchText.toLowerCase())
-    const matchesStatus = statusFilter === '' || pole.status === statusFilter
     const matchesPoleType = poleTypeFilter === '' || poleType === poleTypeFilter
-    return matchesSearch && matchesStatus && matchesPoleType
+    return matchesSearch && matchesPoleType
   })
+
+  const filteredPoles = statusScopedPoles.filter(
+    (pole) => statusFilter === '' || pole.status === statusFilter
+  )
 
   const neighborhoodGroups = Object.entries(
     filteredPoles.reduce((acc, pole) => {
@@ -522,9 +525,9 @@ function PolesPage() {
         : []
 
   const counts = {
-    total: filteredPoles.length,
-    available: filteredPoles.filter((pole) => pole.status === 'AVAILABLE').length,
-    occupied: filteredPoles.filter((pole) => pole.status === 'OCCUPIED').length,
+    total: statusScopedPoles.length,
+    available: statusScopedPoles.filter((pole) => pole.status === 'AVAILABLE').length,
+    occupied: statusScopedPoles.filter((pole) => pole.status === 'OCCUPIED').length,
   }
 
   const handleMapAreaSelect = useCallback((areaPoleIds) => {

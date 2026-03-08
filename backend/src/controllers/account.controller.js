@@ -144,7 +144,7 @@ export const deleteAccount = async (req, res, next) => {
     const forceDeleteOrders = req.body?.forceDeleteOrders === true;
 
     const accountRes = await client.query(
-      'SELECT * FROM accounts WHERE id = $1',
+      'SELECT * FROM accounts WHERE id::text = $1::text',
       [id]
     );
 
@@ -155,7 +155,7 @@ export const deleteAccount = async (req, res, next) => {
     const ordersRes = await client.query(
       `SELECT id, pole_id, status
        FROM orders
-       WHERE account_id = $1`,
+       WHERE account_id::text = $1::text`,
       [id]
     );
 
@@ -186,18 +186,18 @@ export const deleteAccount = async (req, res, next) => {
       await client.query(
         `UPDATE poles
          SET status = 'AVAILABLE', updated_at = NOW()
-         WHERE id = ANY($1::uuid[])`,
+         WHERE id::text = ANY($1::text[])`,
         [poleIds]
       );
     }
 
     await client.query(
-      'DELETE FROM orders WHERE account_id = $1',
+      'DELETE FROM orders WHERE account_id::text = $1::text',
       [id]
     );
 
     await client.query(
-      'DELETE FROM accounts WHERE id = $1',
+      'DELETE FROM accounts WHERE id::text = $1::text',
       [id]
     );
 

@@ -1,0 +1,76 @@
+{
+  "at": "2026-03-05T12:23:33.109Z",
+  "totalPoles": 891,
+  "geocodeErrors": 0,
+  "updatedGeoRows": 891,
+  "updatedCodeRows": 891,
+  "stats": {
+    "total": 891,
+    "unique_codes": 891,
+    "neighborhood_count": 21,
+    "street_count": 12
+  },
+  "topNeighborhoods": [
+    {
+      "neighborhood": "Yeşilırmak",
+      "c": 167
+    },
+    {
+      "neighborhood": "Semerkant",
+      "c": 111
+    },
+    {
+      "neighborhood": "Karşıyaka",
+      "c": 100
+    },
+    {
+      "neighborhood": "Cemalbağları",
+      "c": 92
+    },
+    {
+      "neighborhood": "Taşlıçiftlik Köyü",
+      "c": 88
+    },
+    {
+      "neighborhood": "Bahçelievler",
+      "c": 54
+    },
+    {
+      "neighborhood": "Yeni",
+      "c": 53
+    },
+    {
+      "neighborhood": "Tokat",
+      "c": 47
+    },
+    {
+      "neighborhood": "Geyras",
+      "c": 42
+    },
+    {
+      "neighborhood": "Kümbet",
+      "c": 37
+    },
+    {
+      "neighborhood": "Bakışlı",
+      "c": 27
+    },
+    {
+      "neighborhood": "Doğancıbağları",
+      "c": 27
+    },
+    {
+      "neighborhood": "Esentepe",
+      "c": 13
+    },
+    {
+      "neighborhood": "Altıyüzevler",
+      "c": 7
+    },
+    {
+      "neighborhood": "Bedestenlioğlu",
+      "c": 7
+    }
+  ],
+  "checkpointPath": "/Users/altintasmert/Desktop/mbgadversimentv1/backups/db/pole_geocode_fix_checkpoint.json"
+}

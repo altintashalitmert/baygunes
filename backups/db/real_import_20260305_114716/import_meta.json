@@ -1,0 +1,32 @@
+{
+  "imported_at_utc": "2026-03-05T11:47:16.023796+00:00",
+  "files": [
+    "/Users/altintasmert/Downloads/direk_koordinatlari.csv",
+    "/Users/altintasmert/Downloads/aydinlatma_direkleri.csv",
+    "/Users/altintasmert/Downloads/kadastro_itrf_direkleri.csv",
+    "/Users/altintasmert/Downloads/yeni_koordinatlar.csv"
+  ],
+  "raw_total": 1004,
+  "unique_total": 891,
+  "deleted_poles_before_insert": 0,
+  "deleted_staging_before_insert": 0,
+  "inserted_poles": 891,
+  "poles_total_after": 891,
+  "per_source_raw": {
+    "DIREK_KOORDINATLARI": 106,
+    "AYDINLATMA_DIREKLERI": 413,
+    "KADASTRO_ITRF": 484,
+    "YENI_KOORDINATLAR": 1
+  },
+  "per_source_final": {
+    "KADASTRO_ITRF": 472,
+    "AYDINLATMA_DIREKLERI": 413,
+    "DIREK_KOORDINATLARI": 5,
+    "YENI_KOORDINATLAR": 1
+  },
+  "per_type_final": {
+    "NORMAL": 478,
+    "AYDINLATMALI": 413
+  },
+  "backup_dir": "/Users/altintasmert/Desktop/mbgadversimentv1/backups/db/real_import_20260305_114716"
+}

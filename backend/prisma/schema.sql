@@ -9,6 +9,7 @@ END $$;
 -- Create enums
 CREATE TYPE user_role AS ENUM ('SUPER_ADMIN', 'OPERATOR', 'PRINTER', 'FIELD');
 CREATE TYPE pole_status AS ENUM ('AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'INACTIVE');
+CREATE TYPE pole_type AS ENUM ('NORMAL', 'AYDINLATMALI');
 CREATE TYPE order_status AS ENUM ('PENDING', 'PRINTING', 'AWAITING_MOUNT', 'LIVE', 'EXPIRED', 'COMPLETED');
 CREATE TYPE file_type AS ENUM ('CONTRACT', 'AD_IMAGE', 'PROOF_MOUNT', 'PROOF_DISMOUNT');
 
@@ -40,6 +41,7 @@ CREATE TABLE poles (
     neighborhood VARCHAR(100),
     street VARCHAR(255),
     sequence_no INTEGER,
+    pole_type pole_type DEFAULT 'NORMAL',
     status pole_status DEFAULT 'AVAILABLE',
     deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW(),

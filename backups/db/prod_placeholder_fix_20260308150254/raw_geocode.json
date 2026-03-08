@@ -1,0 +1,1477 @@
+[
+  {
+    "id": "30afa483-53a5-4e72-86e6-fe31497ee15d",
+    "pole_code": "TOKAT-ALIPASA-ALIPASA-CIVARI-0001",
+    "raw": {
+      "place_id": 192558610,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 512487031,
+      "lat": "40.3151580",
+      "lon": "36.5548929",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Alipaşa, Yarahmet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Alipaşa",
+        "city_district": "Yarahmet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3149004",
+        "40.3152522",
+        "36.5514933",
+        "36.5552040"
+      ]
+    }
+  },
+  {
+    "id": "4289c9f0-1da5-4834-b71c-831e74afa3b9",
+    "pole_code": "TOKAT-BUYUK-BEYBAGI-BUYUK-BEYBAGI-CIVARI-0001",
+    "raw": {
+      "place_id": 191393732,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 495538697,
+      "lat": "40.2943869",
+      "lon": "36.5526814",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Büyük Beybağı, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Büyük Beybağı",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2943800",
+        "40.2943882",
+        "36.5510857",
+        "36.5529877"
+      ]
+    }
+  },
+  {
+    "id": "5eb80fac-9813-4597-bfdb-468de6658d1b",
+    "pole_code": "TOKAT-DEVEGORMEZ-DEVEGORMEZ-CIVARI-0001",
+    "raw": {
+      "place_id": 193362512,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 213893982,
+      "lat": "40.3060159",
+      "lon": "36.5551920",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Devegörmez, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Devegörmez",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3058372",
+        "40.3061219",
+        "36.5538574",
+        "36.5554508"
+      ]
+    }
+  },
+  {
+    "id": "a8ec2ff9-2b8b-47a4-a398-dd9bfa4f2464",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0001",
+    "raw": {
+      "place_id": 193007941,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3299470",
+      "lon": "36.5660909",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "b8b0233e-8526-4b2d-9a9c-24ca62a47f61",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0002",
+    "raw": {
+      "place_id": 192109413,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3300039",
+      "lon": "36.5662345",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "a7ddde01-b6fc-4151-98ea-60005a03898f",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0003",
+    "raw": {
+      "place_id": 192109413,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3301658",
+      "lon": "36.5665649",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "e3c5acdd-0109-4fa6-a8ee-00f8ea3ea801",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0004",
+    "raw": {
+      "place_id": 192135251,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3304282",
+      "lon": "36.5669754",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "1587e1ed-a77c-4fdd-84d3-7b3b41161061",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0005",
+    "raw": {
+      "place_id": 190854292,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3306787",
+      "lon": "36.5673022",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "423e11ea-4112-4ffc-b1cb-e321c2ad7622",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0006",
+    "raw": {
+      "place_id": 190854292,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3308899",
+      "lon": "36.5675591",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "cbccb6ba-805c-4b15-9ca0-2694c84f6839",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0007",
+    "raw": {
+      "place_id": 193007941,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3310353",
+      "lon": "36.5677359",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "591a985f-7ca3-4a9b-abf9-fe83e67d7cef",
+    "pole_code": "TOKAT-DOGUKENT-DOGUKENT-CIVARI-0008",
+    "raw": {
+      "place_id": 190854292,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 301791227,
+      "lat": "40.3312860",
+      "lon": "36.5680407",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Doğukent, Dedeli, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Doğukent",
+        "village": "Dedeli",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3299226",
+        "40.3442213",
+        "36.5660294",
+        "36.5858120"
+      ]
+    }
+  },
+  {
+    "id": "19409b74-e335-434e-b0ee-dd27bfd28122",
+    "pole_code": "TOKAT-GULBAHARHATUN-GULBAHARHATUN-CIVARI-0001",
+    "raw": {
+      "place_id": 191293522,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 731868583,
+      "lat": "40.3190447",
+      "lon": "36.5548712",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Gülbaharhatun, Gülbaharhatun Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Gülbaharhatun",
+        "city_district": "Gülbaharhatun Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3190097",
+        "40.3190506",
+        "36.5540793",
+        "36.5549826"
+      ]
+    }
+  },
+  {
+    "id": "12832be2-d7cf-4855-bfd1-7d41d05e959d",
+    "pole_code": "TOKAT-GULBAHARHATUN-GULBAHARHATUN-CIVARI-0002",
+    "raw": {
+      "place_id": 192090260,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 731868582,
+      "lat": "40.3192474",
+      "lon": "36.5548722",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Gülbaharhatun, Gülbaharhatun Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Gülbaharhatun",
+        "city_district": "Gülbaharhatun Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3192306",
+        "40.3192510",
+        "36.5544600",
+        "36.5549613"
+      ]
+    }
+  },
+  {
+    "id": "2222ee7b-653f-42b9-9757-032802385fdc",
+    "pole_code": "TOKAT-GULBAHARHATUN-GULBAHARHATUN-CIVARI-0003",
+    "raw": {
+      "place_id": 191231175,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 213893998,
+      "lat": "40.3214261",
+      "lon": "36.5543861",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Gülbaharhatun, Gülbaharhatun Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Gülbaharhatun",
+        "city_district": "Gülbaharhatun Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3213595",
+        "40.3214300",
+        "36.5543229",
+        "36.5558846"
+      ]
+    }
+  },
+  {
+    "id": "c699a5b6-c352-4b34-887f-49590b9aa795",
+    "pole_code": "TOKAT-KEMER-KEMER-CIVARI-0001",
+    "raw": {
+      "place_id": 196606826,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302768,
+      "lat": "40.2928347",
+      "lon": "36.5526421",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Kemer, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Kemer",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2926086",
+        "40.2928873",
+        "36.5525602",
+        "36.5529939"
+      ]
+    }
+  },
+  {
+    "id": "53c01b44-d193-457d-801e-1f414109470a",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0001",
+    "raw": {
+      "place_id": 190345204,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3297012",
+      "lon": "36.5654133",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "6e1bdeb2-6937-48ab-a8b4-8d8552a85881",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0002",
+    "raw": {
+      "place_id": 192222320,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3298061",
+      "lon": "36.5657053",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "0b6c0b9c-b430-45d0-b2f5-7f4c07e5b5ec",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0003",
+    "raw": {
+      "place_id": 191217126,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3298548",
+      "lon": "36.5611444",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "e2e61c62-5ec3-4d85-9393-f5603ba195cb",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0004",
+    "raw": {
+      "place_id": 192222320,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3299327",
+      "lon": "36.5607640",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "8bb4b7f8-3082-4808-bb2d-edb55ccead22",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0005",
+    "raw": {
+      "place_id": 192222320,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3300106",
+      "lon": "36.5602863",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "4f5a9ae7-33a1-4fdc-8acd-01b4ea601fa1",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0006",
+    "raw": {
+      "place_id": 193008338,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3300762",
+      "lon": "36.5598777",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "dbda55c6-22a0-4a34-b924-48cda16defca",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0007",
+    "raw": {
+      "place_id": 190345204,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3301550",
+      "lon": "36.5593866",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "db7b73b6-6b29-4f09-acdd-f3b6298ce3af",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0008",
+    "raw": {
+      "place_id": 190345204,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3302120",
+      "lon": "36.5591055",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "1decd965-2ad1-4fe6-9d95-b67e14c9c9e5",
+    "pole_code": "TOKAT-KUMBET-NACI-OZEN-CD-0009",
+    "raw": {
+      "place_id": 193008338,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229406497,
+      "lat": "40.3303054",
+      "lon": "36.5586674",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "Naci Özen Cd.",
+      "display_name": "Naci Özen Cd., Tokat, Kümbet Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "road": "Naci Özen Cd.",
+        "residential": "Tokat",
+        "city_district": "Kümbet Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3294592",
+        "40.3303620",
+        "36.5584018",
+        "36.5660294"
+      ]
+    }
+  },
+  {
+    "id": "70c8fd08-cf8d-4397-9fa4-1b84a2246e40",
+    "pole_code": "TOKAT-MAHMUTPASA-MAHMUTPASA-CIVARI-0001",
+    "raw": {
+      "place_id": 193461199,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 213894001,
+      "lat": "40.3036256",
+      "lon": "36.5544162",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Mahmutpaşa, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Mahmutpaşa",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3036011",
+        "40.3036562",
+        "36.5535509",
+        "36.5546075"
+      ]
+    }
+  },
+  {
+    "id": "2c03d395-da22-4965-a870-21d7ddb6ea9f",
+    "pole_code": "TOKAT-MEHMETPASA-MEHMETPASA-CIVARI-0001",
+    "raw": {
+      "place_id": 192234859,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 336647646,
+      "lat": "40.3139869",
+      "lon": "36.5547539",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Mehmetpaşa, Mehmetpaşa Mahallesi, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Mehmetpaşa",
+        "city_district": "Mehmetpaşa Mahallesi",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3138507",
+        "40.3140056",
+        "36.5546627",
+        "36.5570946"
+      ]
+    }
+  },
+  {
+    "id": "07683c23-6b41-4815-903b-8cb84d14ebad",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0001",
+    "raw": {
+      "place_id": 190711209,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302767,
+      "lat": "40.2924795",
+      "lon": "36.5522269",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2924110",
+        "40.2941102",
+        "36.5520159",
+        "36.5554492"
+      ]
+    }
+  },
+  {
+    "id": "a5581446-a9bf-4ea4-8b4a-1c3d7e00d8f3",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0002",
+    "raw": {
+      "place_id": 191798987,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302767,
+      "lat": "40.2925490",
+      "lon": "36.5525042",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2924110",
+        "40.2941102",
+        "36.5520159",
+        "36.5554492"
+      ]
+    }
+  },
+  {
+    "id": "3be5bc9a-7858-45e3-9d51-37a4b1792ddd",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0003",
+    "raw": {
+      "place_id": 191419476,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302787,
+      "lat": "40.2949109",
+      "lon": "36.5529328",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2945304",
+        "40.2959287",
+        "36.5528502",
+        "36.5529707"
+      ]
+    }
+  },
+  {
+    "id": "d75675a4-773d-49bf-8300-a471584ce8e5",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0004",
+    "raw": {
+      "place_id": 192221774,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302787,
+      "lat": "40.2950718",
+      "lon": "36.5529122",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2945304",
+        "40.2959287",
+        "36.5528502",
+        "36.5529707"
+      ]
+    }
+  },
+  {
+    "id": "8ede2b03-fd0a-4720-89fb-5f8dfa7f07e1",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0005",
+    "raw": {
+      "place_id": 192221774,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302787,
+      "lat": "40.2953864",
+      "lon": "36.5528746",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2945304",
+        "40.2959287",
+        "36.5528502",
+        "36.5529707"
+      ]
+    }
+  },
+  {
+    "id": "5289b405-92ac-4313-a709-6d8754d79616",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0006",
+    "raw": {
+      "place_id": 191419476,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302787,
+      "lat": "40.2957766",
+      "lon": "36.5528519",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2945304",
+        "40.2959287",
+        "36.5528502",
+        "36.5529707"
+      ]
+    }
+  },
+  {
+    "id": "8f35f152-7f63-4991-a116-86b248f4306b",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0007",
+    "raw": {
+      "place_id": 190745192,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 709302784,
+      "lat": "40.2959740",
+      "lon": "36.5531130",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Cemalbağları, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "neighbourhood": "Cemalbağları",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2956135",
+        "40.2959747",
+        "36.5530756",
+        "36.5543477"
+      ]
+    }
+  },
+  {
+    "id": "4bb318f6-9767-452e-ae78-34fa92772f71",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0008",
+    "raw": {
+      "place_id": 191957541,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 213894065,
+      "lat": "40.2974057",
+      "lon": "36.5536907",
+      "category": "highway",
+      "type": "tertiary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2971225",
+        "40.2974220",
+        "36.5536309",
+        "36.5562887"
+      ]
+    }
+  },
+  {
+    "id": "48069657-0e04-4859-b668-c87acb2913d9",
+    "pole_code": "TOKAT-PERAKENDE-PERAKENDE-CIVARI-0009",
+    "raw": {
+      "place_id": 190775239,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 495538711,
+      "lat": "40.2982029",
+      "lon": "36.5542260",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Perakende, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Perakende",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.2980095",
+        "40.2982140",
+        "36.5541938",
+        "36.5547895"
+      ]
+    }
+  },
+  {
+    "id": "215620dd-e0be-4982-bcb0-b647c9bbc446",
+    "pole_code": "TOKAT-SOGUKPINAR-SOGUKPINAR-CIVARI-0001",
+    "raw": {
+      "place_id": 191214960,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 731988866,
+      "lat": "40.3093084",
+      "lon": "36.5537445",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Soğukpınar, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Soğukpınar",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3092708",
+        "40.3093119",
+        "36.5530939",
+        "36.5538054"
+      ]
+    }
+  },
+  {
+    "id": "03ef339b-a76e-47f8-936f-cfb30c7894d0",
+    "pole_code": "TOKAT-YENI-YENI-CIVARI-0001",
+    "raw": {
+      "place_id": 192010727,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 731988045,
+      "lat": "40.3247338",
+      "lon": "36.5541270",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Yeni, Yeni Mahalle, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Yeni",
+        "city_district": "Yeni Mahalle",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3246941",
+        "40.3247338",
+        "36.5534234",
+        "36.5541480"
+      ]
+    }
+  },
+  {
+    "id": "35b13b02-40df-4e9b-98bd-4ee1ee02a6cb",
+    "pole_code": "TOKAT-YENI-YENI-CIVARI-0002",
+    "raw": {
+      "place_id": 192009571,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 1078962771,
+      "lat": "40.3256057",
+      "lon": "36.5625329",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Yeni, Yeni Mahalle, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Yeni",
+        "city_district": "Yeni Mahalle",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3255650",
+        "40.3267962",
+        "36.5588736",
+        "36.5625740"
+      ]
+    }
+  },
+  {
+    "id": "1de54928-2b1b-42a6-ba36-753baf95a847",
+    "pole_code": "TOKAT-YENI-YENI-CIVARI-0003",
+    "raw": {
+      "place_id": 191747174,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 1215768564,
+      "lat": "40.3275565",
+      "lon": "36.5573345",
+      "category": "highway",
+      "type": "residential",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Yeni, Yeni Mahalle, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Yeni",
+        "city_district": "Yeni Mahalle",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3275554",
+        "40.3275681",
+        "36.5572241",
+        "36.5585099"
+      ]
+    }
+  },
+  {
+    "id": "72cbc19e-52e7-482b-a2cb-96f48a86f93c",
+    "pole_code": "TOKAT-YENI-YENI-CIVARI-0004",
+    "raw": {
+      "place_id": 191891262,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "way",
+      "osm_id": 229407134,
+      "lat": "40.3289571",
+      "lon": "36.5567629",
+      "category": "highway",
+      "type": "secondary",
+      "place_rank": 26,
+      "importance": 0.05339094911116194,
+      "addresstype": "road",
+      "name": "",
+      "display_name": "Tokat, Yeni, Yeni Mahalle, Tokat, Karadeniz Bölgesi, 60100, Türkiye",
+      "address": {
+        "residential": "Tokat",
+        "suburb": "Yeni",
+        "city_district": "Yeni Mahalle",
+        "city": "Tokat",
+        "province": "Tokat",
+        "ISO3166-2-lvl4": "TR-60",
+        "region": "Karadeniz Bölgesi",
+        "postcode": "60100",
+        "country": "Türkiye",
+        "country_code": "tr"
+      },
+      "boundingbox": [
+        "40.3289070",
+        "40.3293908",
+        "36.5567599",
+        "36.5569165"
+      ]
+    }
+  }
+]

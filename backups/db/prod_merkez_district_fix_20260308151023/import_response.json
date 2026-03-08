@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": "CSV import tamamlandi: 0 yeni, 106 guncel.",
+  "data": {
+    "fileName": "prod-merkez-district-fix.csv",
+    "rowCount": 106,
+    "createdCount": 0,
+    "updatedCount": 106
+  }
+}

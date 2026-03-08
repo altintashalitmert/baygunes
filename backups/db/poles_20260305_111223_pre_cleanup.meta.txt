@@ -1,0 +1,8 @@
+table=public.poles
+row_count=598
+columns=16
+csv_gz_file=poles_20260305_111223_pre_cleanup.csv.gz
+csv_gz_sha256=2bcc5392320832233822dc979f86ae818fe5620af7ef560ab9c36ef11ac13ee5
+insert_sql_gz_file=poles_20260305_111223_pre_cleanup.insert.sql.gz
+insert_sql_gz_sha256=97c738bbd52e95a37c086cd3d3d06c40162277d48df0cb67b594e63733fc3377
+generated_by=node_pg_export_pre_cleanup

@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "message": "CSV import tamamlandi: 0 yeni, 40 guncel.",
+  "data": {
+    "fileName": "prod-placeholder-fix.csv",
+    "rowCount": 40,
+    "createdCount": 0,
+    "updatedCount": 40
+  }
+}

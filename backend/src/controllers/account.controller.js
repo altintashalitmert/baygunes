@@ -177,8 +177,8 @@ export const deleteAccount = async (req, res, next) => {
 
     await client.query(
       `DELETE FROM transactions
-       WHERE account_id = $1
-          OR (${orderIds.length > 0 ? 'order_id = ANY($2::uuid[])' : 'FALSE'})`,
+       WHERE account_id::text = $1::text
+          OR (${orderIds.length > 0 ? 'order_id::text = ANY($2::text[])' : 'FALSE'})`,
       orderIds.length > 0 ? [id, orderIds] : [id]
     );
 

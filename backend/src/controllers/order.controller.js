@@ -363,7 +363,7 @@ export const getOrderById = async (req, res, next) => {
 // GET /api/orders - List orders (with filters)
 export const getOrders = async (req, res, next) => {
   try {
-    const { status, poleId } = req.query;
+    const { status, poleId, includeCancelled } = req.query;
     const user = req.user;
     let query = `${ORDER_SELECT_WITH_PROOFS} WHERE 1=1`;
     const params = [];
@@ -382,6 +382,8 @@ export const getOrders = async (req, res, next) => {
     if (status) {
       query += ` AND o.status = $${paramCount++}`;
       params.push(status);
+    } else if (includeCancelled !== 'true') {
+      query += ` AND o.status <> 'CANCELLED'`;
     }
 
     if (poleId) {

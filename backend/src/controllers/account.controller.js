@@ -7,8 +7,8 @@ export const getAccounts = async (req, res, next) => {
     const { search } = req.query;
     let query = `
       SELECT a.*, 
-      (SELECT COUNT(*) FROM orders o WHERE o.account_id = a.id) as total_orders,
-      (SELECT COALESCE(SUM(price), 0) FROM orders o WHERE o.account_id = a.id) as total_debt,
+      (SELECT COUNT(*) FROM orders o WHERE o.account_id = a.id AND o.status <> 'CANCELLED') as total_orders,
+      (SELECT COALESCE(SUM(price), 0) FROM orders o WHERE o.account_id = a.id AND o.status <> 'CANCELLED') as total_debt,
       (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.account_id = a.id) as total_paid
       FROM accounts a 
       WHERE 1=1
@@ -50,7 +50,8 @@ export const getAccountById = async (req, res, next) => {
       SELECT o.*, p.pole_code, p.city, p.district 
       FROM orders o
       JOIN poles p ON o.pole_id = p.id
-      WHERE o.account_id = $1 
+      WHERE o.account_id = $1
+        AND o.status <> 'CANCELLED'
       ORDER BY o.created_at DESC
     `, [id]);
 
@@ -133,4 +134,3 @@ export const updateAccount = async (req, res, next) => {
     next(error);
   }
 };
-

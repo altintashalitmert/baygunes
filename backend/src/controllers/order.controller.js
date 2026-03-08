@@ -276,13 +276,11 @@ export const createOrder = async (req, res, next) => {
             ]
         );
 
-        // Update Pole
-
-        // Update Pole Status only if it's starting immediately (PENDING)
-        // If SCHEDULED, pole remains as is until date comes (handled by daily cron job later)
-        if (initialStatus !== 'SCHEDULED') {
-             await client.query(`UPDATE poles SET status = 'OCCUPIED', updated_at = NOW() WHERE id = $1`, [pId]);
-        }
+        // Any non-terminal order should reserve the pole immediately in the UI.
+        await client.query(
+          `UPDATE poles SET status = 'OCCUPIED', updated_at = NOW() WHERE id = $1`,
+          [pId]
+        );
         
         createdOrders.push(orderRes.rows[0]);
       }

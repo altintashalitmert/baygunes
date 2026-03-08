@@ -7,6 +7,7 @@ import {
   Layers,
   Loader2,
   MapPin,
+  Plus,
   Search,
   Trash2,
 } from 'lucide-react'

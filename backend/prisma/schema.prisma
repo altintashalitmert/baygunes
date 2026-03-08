@@ -22,11 +22,6 @@ enum PoleStatus {
   INACTIVE
 }
 
-enum PoleType {
-  NORMAL
-  AYDINLATMALI
-}
-
 enum OrderStatus {
   PENDING
   SCHEDULED
@@ -84,7 +79,6 @@ model Pole {
   neighborhood String?
   street       String?
   sequenceNo   Int?       @map("sequence_no")
-  poleType     PoleType   @default(NORMAL) @map("pole_type")
   status       PoleStatus @default(AVAILABLE)
   deletedAt    DateTime?  @map("deleted_at")
   createdAt    DateTime   @default(now()) @map("created_at")

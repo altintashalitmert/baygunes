@@ -11,8 +11,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "node prisma/seed.js",
-    "db:import:tokat": "node scripts/import_tokat_real_poles.js"
+    "db:seed": "node prisma/seed.js"
   },
   "keywords": [
     "pole",

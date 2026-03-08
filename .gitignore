@@ -40,6 +40,8 @@ redis_data/
 # Uploads
 public/uploads/**
 !public/uploads/.gitkeep
+backend/public/uploads/**
+!backend/public/uploads/.gitkeep
 
 # Testing
 coverage/

@@ -134,3 +134,87 @@ export const updateAccount = async (req, res, next) => {
     next(error);
   }
 };
+
+// DELETE /api/accounts/:id - Hard delete account and optionally related orders
+export const deleteAccount = async (req, res, next) => {
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.params;
+    const forceDeleteOrders = req.body?.forceDeleteOrders === true;
+
+    const accountRes = await client.query(
+      'SELECT * FROM accounts WHERE id = $1',
+      [id]
+    );
+
+    if (accountRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    const ordersRes = await client.query(
+      `SELECT id, pole_id, status
+       FROM orders
+       WHERE account_id = $1`,
+      [id]
+    );
+
+    const hasActiveOrders = ordersRes.rows.some(
+      (order) => order.status !== 'CANCELLED'
+    );
+
+    if (hasActiveOrders && !forceDeleteOrders) {
+      return res.status(409).json({
+        success: false,
+        error: 'Account has related orders. Use forceDeleteOrders=true to remove them.',
+      });
+    }
+
+    const orderIds = ordersRes.rows.map((row) => row.id).filter(Boolean);
+    const poleIds = [...new Set(ordersRes.rows.map((row) => row.pole_id).filter(Boolean))];
+
+    await client.query('BEGIN');
+
+    await client.query(
+      `DELETE FROM transactions
+       WHERE account_id = $1
+          OR (${orderIds.length > 0 ? 'order_id = ANY($2::uuid[])' : 'FALSE'})`,
+      orderIds.length > 0 ? [id, orderIds] : [id]
+    );
+
+    if (poleIds.length > 0) {
+      await client.query(
+        `UPDATE poles
+         SET status = 'AVAILABLE', updated_at = NOW()
+         WHERE id = ANY($1::uuid[])`,
+        [poleIds]
+      );
+    }
+
+    await client.query(
+      'DELETE FROM orders WHERE account_id = $1',
+      [id]
+    );
+
+    await client.query(
+      'DELETE FROM accounts WHERE id = $1',
+      [id]
+    );
+
+    await client.query('COMMIT');
+
+    return res.json({
+      success: true,
+      data: {
+        accountId: id,
+        deletedOrders: orderIds.length,
+        releasedPoles: poleIds.length,
+      },
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+};

@@ -134,3 +134,55 @@ export const updateAccount = async (req, res, next) => {
     next(error);
   }
 };
+
+// DELETE /api/accounts/:id - Delete account if it has no linked history
+export const deleteAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const accountRes = await pool.query(
+      'SELECT id, company_name, contact_name FROM accounts WHERE id = $1',
+      [id]
+    );
+
+    if (accountRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Account not found',
+      });
+    }
+
+    const [ordersRes, transactionsRes] = await Promise.all([
+      pool.query('SELECT COUNT(*)::int AS count FROM orders WHERE account_id = $1', [id]),
+      pool.query('SELECT COUNT(*)::int AS count FROM transactions WHERE account_id = $1', [id]),
+    ]);
+
+    const orderCount = ordersRes.rows[0]?.count || 0;
+    const transactionCount = transactionsRes.rows[0]?.count || 0;
+
+    if (orderCount > 0 || transactionCount > 0) {
+      return res.status(409).json({
+        success: false,
+        error:
+          'Bu müşteri hesabına bağlı sipariş veya tahsilat kaydı var. Veri kaybını önlemek için silme engellendi.',
+        data: {
+          orderCount,
+          transactionCount,
+        },
+      });
+    }
+
+    await pool.query('DELETE FROM accounts WHERE id = $1', [id]);
+
+    res.json({
+      success: true,
+      data: {
+        id,
+        name:
+          accountRes.rows[0].company_name || accountRes.rows[0].contact_name || 'Unnamed account',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

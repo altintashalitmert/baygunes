@@ -5,22 +5,50 @@ import React, { lazy, Suspense } from 'react'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoadingSpinner from './components/LoadingSpinner'
 
-const LandingPage = lazy(() => import('./pages/LandingPage'))
-const LoginPage = lazy(() => import('./pages/LoginPage'))
-const DashboardLayout = lazy(() => import('./components/DashboardLayout'))
-const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const UsersPage = lazy(() => import('./pages/UsersPage'))
-const PolesPage = lazy(() => import('./pages/PolesPage'))
-const OrdersPage = lazy(() => import('./pages/OrdersPage'))
-const AccountsPage = lazy(() => import('./pages/AccountsPage'))
-const FieldTasksPage = lazy(() => import('./pages/FieldTasksPage'))
-const PrintTasksPage = lazy(() => import('./pages/PrintTasksPage'))
-const PricingPage = lazy(() => import('./pages/PricingPage'))
-const ReportsPage = lazy(() => import('./pages/ReportsPage'))
-const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
-const HowToUsePage = lazy(() => import('./pages/HowToUsePage'))
-const PoleCapturePage = lazy(() => import('./pages/PoleCapturePage'))
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const CHUNK_RELOAD_KEY = 'pbms:chunk-reload'
+
+const isChunkLoadError = (error) =>
+  /Failed to fetch dynamically imported module|Importing a module script failed|Failed to load module script/i.test(
+    String(error?.message || error || '')
+  )
+
+const lazyWithRecovery = (importer) =>
+  lazy(async () => {
+    try {
+      const module = await importer()
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+      }
+      return module
+    } catch (error) {
+      if (typeof window !== 'undefined' && isChunkLoadError(error)) {
+        const hasReloaded = sessionStorage.getItem(CHUNK_RELOAD_KEY) === '1'
+        if (!hasReloaded) {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+          window.location.reload()
+          return new Promise(() => {})
+        }
+      }
+      throw error
+    }
+  })
+
+const LandingPage = lazyWithRecovery(() => import('./pages/LandingPage'))
+const LoginPage = lazyWithRecovery(() => import('./pages/LoginPage'))
+const DashboardLayout = lazyWithRecovery(() => import('./components/DashboardLayout'))
+const DashboardPage = lazyWithRecovery(() => import('./pages/DashboardPage'))
+const UsersPage = lazyWithRecovery(() => import('./pages/UsersPage'))
+const PolesPage = lazyWithRecovery(() => import('./pages/PolesPage'))
+const OrdersPage = lazyWithRecovery(() => import('./pages/OrdersPage'))
+const AccountsPage = lazyWithRecovery(() => import('./pages/AccountsPage'))
+const FieldTasksPage = lazyWithRecovery(() => import('./pages/FieldTasksPage'))
+const PrintTasksPage = lazyWithRecovery(() => import('./pages/PrintTasksPage'))
+const PricingPage = lazyWithRecovery(() => import('./pages/PricingPage'))
+const ReportsPage = lazyWithRecovery(() => import('./pages/ReportsPage'))
+const NotificationSettingsPage = lazyWithRecovery(() => import('./pages/NotificationSettingsPage'))
+const HowToUsePage = lazyWithRecovery(() => import('./pages/HowToUsePage'))
+const PoleCapturePage = lazyWithRecovery(() => import('./pages/PoleCapturePage'))
+const NotFoundPage = lazyWithRecovery(() => import('./pages/NotFoundPage'))
 
 function getDefaultRoute(user) {
   if (user?.role === 'PRINTER') return '/print-tasks'

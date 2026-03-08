@@ -7,6 +7,37 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const PDF_FONT_PATHS = {
+  regular: path.join(__dirname, '../assets/fonts/NotoSans-Regular.ttf'),
+  bold: path.join(__dirname, '../assets/fonts/NotoSans-Bold.ttf'),
+};
+
+const registerPdfFonts = (doc) => {
+  const hasRegularFont = fs.existsSync(PDF_FONT_PATHS.regular);
+  const hasBoldFont = fs.existsSync(PDF_FONT_PATHS.bold);
+
+  if (hasRegularFont) {
+    doc.registerFont('PBMS-Regular', PDF_FONT_PATHS.regular);
+  }
+
+  if (hasBoldFont) {
+    doc.registerFont('PBMS-Bold', PDF_FONT_PATHS.bold);
+  }
+
+  const fonts = {
+    regular: hasRegularFont ? 'PBMS-Regular' : 'Helvetica',
+    bold: hasBoldFont ? 'PBMS-Bold' : hasRegularFont ? 'PBMS-Regular' : 'Helvetica-Bold',
+  };
+
+  doc.font(fonts.regular);
+  return fonts;
+};
+
+const createPdfDocument = (options = {}) => {
+  const doc = new PDFDocument(options);
+  const fonts = registerPdfFonts(doc);
+  return { doc, fonts };
+};
 
 // Helper: Get pricing config
 const getPricingConfig = async (dbClient = pool) => {
@@ -62,33 +93,33 @@ export const generateOrderPdf = async (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename=siparis_formu_${order.pole_code}_${order.id.split('-')[0]}.pdf`);
 
     // 3. Create PDF Document
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const { doc, fonts } = createPdfDocument({ margin: 50, size: 'A4' });
     doc.pipe(res); // Stream directly to response
 
     // --- Header ---
-    doc.font('Helvetica-Bold').fontSize(20).text('BAYGUNES REKLAM', { align: 'center' });
-    doc.fontSize(10).font('Helvetica').text('Direk ve Banner Reklam Sistemleri', { align: 'center' });
+    doc.font(fonts.bold).fontSize(20).text('BAYGUNES REKLAM', { align: 'center' });
+    doc.font(fonts.regular).fontSize(10).text('Direk ve Banner Reklam Sistemleri', { align: 'center' });
     doc.moveDown();
     doc.moveTo(50, 80).lineTo(550, 80).strokeColor('#e2e8f0').stroke();
 
     // --- Title ---
     doc.moveDown(2);
-    doc.font('Helvetica-Bold').fontSize(16).fillColor('#1e293b').text('SİPARİŞ VE SÖZLEŞME FORMU', { align: 'center' });
+    doc.font(fonts.bold).fontSize(16).fillColor('#1e293b').text('SİPARİŞ VE SÖZLEŞME FORMU', { align: 'center' });
     doc.moveDown();
 
     // --- Info Grid ---
     const startY = doc.y;
     
     // Left Column: Customer
-    doc.fontSize(10).fillColor('#64748b').text('MÜŞTERİ BİLGİLERİ', 50, startY);
+    doc.font(fonts.regular).fontSize(10).fillColor('#64748b').text('MÜŞTERİ BİLGİLERİ', 50, startY);
     doc.moveDown(0.5);
-    doc.fillColor('#0f172a').font('Helvetica-Bold').text(order.company_name || order.account_contact || order.client_name);
-    doc.font('Helvetica').text(order.address || 'Adres bilgisi yok');
+    doc.fillColor('#0f172a').font(fonts.bold).text(order.company_name || order.account_contact || order.client_name);
+    doc.font(fonts.regular).text(order.address || 'Adres bilgisi yok');
     doc.text(`${order.phone || ''} - ${order.email || ''}`);
     if (order.tax_no) doc.text(`V.D: ${order.tax_office} - V.No: ${order.tax_no}`);
 
     // Right Column: Order Details
-    doc.fontSize(10).fillColor('#64748b').text('SİPARİŞ DETAYLARI', 300, startY);
+    doc.font(fonts.regular).fontSize(10).fillColor('#64748b').text('SİPARİŞ DETAYLARI', 300, startY);
     doc.moveDown(0.5);
     doc.fillColor('#0f172a');
     doc.text(`Sipariş No: #${order.id.split('-')[0].toUpperCase()}`, 300);
@@ -99,27 +130,45 @@ export const generateOrderPdf = async (req, res, next) => {
 
     // --- Pole Details Box ---
     const boxY = doc.y;
-    doc.rect(50, boxY, 500, 80).fillAndStroke('#f8fafc', '#e2e8f0');
-    
-    doc.fillColor('#0f172a').text('KİRALANAN LOKASYON', 70, boxY + 20);
-    doc.font('Helvetica-Bold').fontSize(14).text(`${order.pole_code} - ${order.district}`, 70, boxY + 40);
-    doc.fontSize(10).font('Helvetica').text(`${order.neighborhood} Mh. ${order.street}`, 70, boxY + 60);
+    const leftColumnX = 70;
+    const rightColumnX = 355;
+    const leftColumnWidth = 245;
+    const rightColumnWidth = 145;
+
+    doc.rect(50, boxY, 500, 96).fillAndStroke('#f8fafc', '#e2e8f0');
+
+    doc.fillColor('#0f172a').font(fonts.regular).fontSize(10).text('KİRALANAN LOKASYON', leftColumnX, boxY + 16, {
+      width: leftColumnWidth,
+    });
+    doc.font(fonts.bold).fontSize(13).text(order.pole_code, leftColumnX, boxY + 34, {
+      width: leftColumnWidth,
+    });
+    doc.font(fonts.regular).fontSize(10).text(
+      `${order.district || '-'} / ${order.neighborhood || '-'} / ${order.street || '-'}`,
+      leftColumnX,
+      boxY + 58,
+      { width: leftColumnWidth }
+    );
 
     // --- Dates & Status ---
-    doc.text('KİRALAMA SÜRESİ', 350, boxY + 20);
-    doc.font('Helvetica-Bold').text(`${new Date(order.start_date).toLocaleDateString()} - ${new Date(order.end_date).toLocaleDateString()}`, 350, boxY + 40);
-    
+    doc.font(fonts.regular).fontSize(10).text('KİRALAMA SÜRESİ', rightColumnX, boxY + 16, {
+      width: rightColumnWidth,
+    });
+    doc.font(fonts.bold).fontSize(12).text(`${formatDate(order.start_date)} - ${formatDate(order.end_date)}`, rightColumnX, boxY + 38, {
+      width: rightColumnWidth,
+    });
+
     doc.moveDown(6);
 
     // --- Financial ---
-    doc.fontSize(12).font('Helvetica-Bold');
+    doc.font(fonts.bold).fontSize(12);
     doc.text('TOPLAM TUTAR:', 350, doc.y);
     doc.fontSize(16).fillColor('#4338ca').text(`₺${Number(order.price).toLocaleString('tr-TR')}`, 450, doc.y - 15, { align: 'right' });
 
     doc.moveDown(4);
 
     // --- Signature Area ---
-    doc.fontSize(10).fillColor('#000');
+    doc.font(fonts.regular).fontSize(10).fillColor('#000');
     doc.text('TESLİM EDEN (BAYGUNES)', 50, doc.y);
     doc.text('TESLİM ALAN (MÜŞTERİ)', 350, doc.y);
     
@@ -128,7 +177,7 @@ export const generateOrderPdf = async (req, res, next) => {
     doc.text('..........................................', 350);
 
     // --- Footer ---
-    doc.fontSize(8).fillColor('#94a3b8').text('Bu belge Baygunes PBMS sistemi tarafından otomatik oluşturulmuştur.', 50, 750, { align: 'center' });
+    doc.font(fonts.regular).fontSize(8).fillColor('#94a3b8').text('Bu belge Baygunes PBMS sistemi tarafından otomatik oluşturulmuştur.', 50, 750, { align: 'center' });
 
     doc.end();
 
@@ -206,7 +255,7 @@ export const generatePrinterReport = async (req, res, next) => {
     }, {});
 
     // Generate PDF
-    const doc = new PDFDocument();
+    const { doc } = createPdfDocument();
     const filename = `printer-report-${Date.now()}.pdf`;
     const filepath = path.join(__dirname, '../../public/uploads/reports', filename);
     
@@ -356,7 +405,7 @@ export const generateFieldReport = async (req, res, next) => {
     }, {});
 
     // Generate PDF
-    const doc = new PDFDocument();
+    const { doc } = createPdfDocument();
     const filename = `field-report-${Date.now()}.pdf`;
     const filepath = path.join(__dirname, '../../public/uploads/reports', filename);
     
@@ -503,7 +552,7 @@ export const generateFinancialReport = async (req, res, next) => {
     stats.occupancyRate = totalPoles > 0 ? ((occupiedPoles / totalPoles) * 100).toFixed(1) : 0;
 
     // Generate PDF
-    const doc = new PDFDocument();
+    const { doc } = createPdfDocument();
     const filename = `financial-report-${Date.now()}.pdf`;
     const filepath = path.join(__dirname, '../../public/uploads/reports', filename);
     

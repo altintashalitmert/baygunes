@@ -2,9 +2,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountApi } from '../api/accountApi'
-import { Plus, Search, ChevronRight, User, Building2, Phone, Mail, FileText, CreditCard, Banknote, History, Wallet, Check } from 'lucide-react'
+import { Plus, Search, ChevronRight, User, Building2, Phone, Mail, FileText, CreditCard, Banknote, History, Wallet, Check, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import ConfirmModal from '../components/ConfirmModal'
 
 function AccountsPage() {
   const [selectedAccountId, setSelectedAccountId] = useState(null)
@@ -12,6 +13,7 @@ function AccountsPage() {
   const [searchText, setSearchText] = useState('')
   const [viewMode, setViewMode] = useState('list') // 'list', 'detail', 'form'
   const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const queryClient = useQueryClient()
   const { data: accountsData } = useQuery({ 
@@ -61,6 +63,23 @@ function AccountsPage() {
         queryClient.invalidateQueries({ queryKey: ['accounts'] }) // Refresh list to update totals
         setShowPaymentForm(false)
         setPaymentData({ amount: '', type: 'CASH', description: '' })
+     }
+  })
+
+  const deleteMutation = useMutation({
+     mutationFn: accountApi.delete,
+     onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+        if (selectedAccountId) {
+          queryClient.removeQueries({ queryKey: ['account', selectedAccountId] })
+        }
+        setSelectedAccountId(null)
+        setShowDeleteConfirm(false)
+        setShowPaymentForm(false)
+        setViewMode('list')
+     },
+     onError: (error) => {
+        alert(error?.response?.data?.error || 'Müşteri hesabı silinemedi.')
      }
   })
 
@@ -272,9 +291,19 @@ function AccountsPage() {
                               <div className={`text-3xl font-black ${accountDetail.account.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                                  {accountDetail.account.balance > 0 ? '-' : ''}₺{Math.abs(accountDetail.account.balance).toLocaleString('tr-TR')}
                               </div>
-                              <button onClick={() => setShowPaymentForm(!showPaymentForm)} className="mt-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black uppercase shadow-lg shadow-emerald-200 flex items-center gap-2 ml-auto">
-                                 <Banknote className="w-4 h-4" /> Tahsilat Gir
-                              </button>
+                              <div className="mt-2 flex items-center justify-end gap-2">
+                                 <button onClick={() => setShowPaymentForm(!showPaymentForm)} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-black uppercase shadow-lg shadow-emerald-200 flex items-center gap-2">
+                                    <Banknote className="w-4 h-4" /> Tahsilat Gir
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    disabled={deleteMutation.isPending}
+                                    className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-black uppercase hover:bg-rose-100 flex items-center gap-2 disabled:opacity-60"
+                                 >
+                                    <Trash2 className="w-4 h-4" /> Sil
+                                 </button>
+                              </div>
                            </div>
                         </div>
 
@@ -401,6 +430,17 @@ function AccountsPage() {
              )}
          </div>
       </div>
+
+      <ConfirmModal
+         isOpen={showDeleteConfirm}
+         onClose={() => setShowDeleteConfirm(false)}
+         onConfirm={() => deleteMutation.mutate(selectedAccountId)}
+         title="Müşteri Silinsin mi?"
+         message="Bu hesap yalnızca bağlı sipariş ve tahsilat kaydı yoksa silinir."
+         confirmText={deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
+         cancelText="Vazgeç"
+         type="danger"
+      />
     </div>
   )
 }

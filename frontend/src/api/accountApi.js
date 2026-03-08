@@ -8,6 +8,7 @@ export const accountApi = {
   getById: (id) => api.get(`/accounts/${id}`),
   create: (data) => api.post('/accounts', data),
   update: (id, data) => api.patch(`/accounts/${id}`, data),
+  delete: (id) => api.delete(`/accounts/${id}`),
   
   // Transactions
   addTransaction: (data) => api.post('/transactions', data),

@@ -1,21 +1,25 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X, Calendar, User, Phone, Check, ArrowRight, Layers } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { accountApi } from '../api/accountApi'
 import { orderApi } from '../api/orderApi'
 
 function CreateOrderModal({ isOpen, onClose, poles = [], onCreate, isPending }) {
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     accountId: '',
     clientName: '',
     clientContact: '',
     startDate: '',
     endDate: '',
     price: ''
+  }
+  const [formData, setFormData] = useState({
+    ...initialFormState
   })
   
   const [searchTerm, setSearchTerm] = useState('')
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
 
   // Fetch Accounts for dropdown
   const { data: accountsData } = useQuery({ 
@@ -46,6 +50,14 @@ function CreateOrderModal({ isOpen, onClose, poles = [], onCreate, isPending }) 
   minStartDate.setDate(minStartDate.getDate() + 1);
   const minDateStr = minStartDate.toISOString().split('T')[0];
 
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(initialFormState)
+      setSearchTerm('')
+      setIsAccountMenuOpen(false)
+    }
+  }, [isOpen])
+
   if (!isOpen || poles.length === 0) return null
 
   const isBulk = poles.length > 1
@@ -63,6 +75,17 @@ function CreateOrderModal({ isOpen, onClose, poles = [], onCreate, isPending }) 
      } else {
         setFormData({ ...formData, accountId: '', clientName: '', clientContact: '' })
      }
+  }
+
+  const handleAccountPick = (account) => {
+    setFormData({
+      ...formData,
+      accountId: account.id,
+      clientName: account.company_name || account.contact_name,
+      clientContact: account.email || account.phone || ''
+    })
+    setSearchTerm('')
+    setIsAccountMenuOpen(false)
   }
 
   const handleSubmit = (e) => {
@@ -113,10 +136,18 @@ function CreateOrderModal({ isOpen, onClose, poles = [], onCreate, isPending }) 
                   <input
                     type="text"
                     placeholder="Müşteri Ara..."
-                    value={searchTerm}
+                    value={searchTerm || (formData.accountId ? formData.clientName : '')}
+                    onFocus={() => setIsAccountMenuOpen(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setIsAccountMenuOpen(false), 120)
+                    }}
                     onChange={(e) => {
-                       setSearchTerm(e.target.value);
-                       if(formData.accountId) setFormData({...formData, accountId: '', clientName: '', clientContact: ''}); // clear selection on type
+                       const nextValue = e.target.value
+                       setSearchTerm(nextValue)
+                       setIsAccountMenuOpen(true)
+                       if (formData.accountId) {
+                         setFormData({ ...formData, accountId: '', clientName: '', clientContact: '' })
+                       }
                     }}
                     className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none focus:rounded-b-none transition-all"
                   />
@@ -129,19 +160,14 @@ function CreateOrderModal({ isOpen, onClose, poles = [], onCreate, isPending }) 
                    Actually let's show it when there are results and input has focus (simulated). 
                    For simplicity: Show if !formData.accountId or searchTerm is typed.
                */}
-               {(!formData.accountId || searchTerm) && (
+               {isAccountMenuOpen && (
                    <div className="absolute top-full left-0 w-full max-h-48 overflow-y-auto bg-white border border-slate-200 border-t-0 rounded-b-xl shadow-xl z-20">
                       {accounts.length > 0 ? accounts.map(acc => (
                          <div 
                             key={acc.id}
-                            onClick={() => {
-                               setFormData({ 
-                                   ...formData, 
-                                   accountId: acc.id,
-                                   clientName: acc.company_name || acc.contact_name,
-                                   clientContact: acc.email || acc.phone || ''
-                               })
-                               setSearchTerm(acc.company_name || acc.contact_name)
+                            onMouseDown={(event) => {
+                               event.preventDefault()
+                               handleAccountPick(acc)
                             }}
                             className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm font-bold text-slate-700 border-b border-slate-50 last:border-none flex justify-between items-center"
                          >

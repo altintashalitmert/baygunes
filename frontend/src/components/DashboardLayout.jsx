@@ -51,7 +51,7 @@ function DashboardLayout() {
     <div className="flex h-full min-h-0 flex-col">
       {showProfile && (
         <div className="border-b border-slate-200 px-5 py-4">
-          <p className="text-base font-bold text-slate-900">Baygunes PBMS</p>
+          <p className="text-base font-bold text-slate-900">Baygunes Reklam</p>
           <p className="text-xs text-slate-500">{user?.name} ({user?.role})</p>
         </div>
       )}
